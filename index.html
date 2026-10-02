@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数学函数可视化与性质分析工具 v2.0</title>
+    <meta name="description" content="开源数学函数可视化工具：2D/3D 绘图、零点/极值/单调性/凹凸性/渐近线分析、定积分、极限、泰勒展开与智能求解助手">
+
+    <!-- 库加载器：多 CDN 回退 -->
+    <script>
+        window.MathViz = {
+            config: { timeout: 9000 },
+
+            loadLibrary: function (name, urls) {
+                return new Promise((resolve, reject) => {
+                    const tryLoad = (index) => {
+                        if (index >= urls.length) {
+                            reject(new Error('所有 CDN 均加载失败: ' + name));
+                            return;
+                        }
+                        const script = document.createElement('script');
+                        script.src = urls[index];
+                        const timer = setTimeout(() => {
+                            script.onload = script.onerror = null;
+                            script.remove();
+                            tryLoad(index + 1);
+                        }, this.config.timeout);
+                        script.onload = () => { clearTimeout(timer); resolve(); };
+                        script.onerror = () => { clearTimeout(timer); script.remove(); tryLoad(index + 1); };
+                        document.head.appendChild(script);
+                    };
+                    tryLoad(0);
+                });
+            },
+
+            checkLibraries: function () {
+                return typeof Plotly !== 'undefined' && typeof math !== 'undefined';
+            },
+
+            showLibraryError: function (message) {
+                message = message || '库加载失败，请检查网络连接后刷新';
+                let box = document.getElementById('library-error');
+                if (!box) {
+                    box = document.createElement('div');
+                    box.id = 'library-error';
+                    box.style.cssText = 'position:fixed;top:20px;right:20px;background:rgba(255,107,107,.92);color:#fff;padding:15px 20px;border-radius:10px;z-index:10000;max-width:400px;box-shadow:0 4px 12px rgba(0,0,0,.3);font-size:14px;';
+                    document.body.appendChild(box);
+                }
+                box.innerHTML = '<strong>加载错误</strong><p style="margin:8px 0;">' + message + '</p>' +
+                    '<button onclick="location.reload()" style="background:#fff;color:#ff6b6b;border:none;padding:8px 16px;border-radius:5px;cursor:pointer;">重新加载</button>';
+            }
+        };
+
+        (async function () {
+            try {
+                if (typeof Plotly === 'undefined') {
+                    await window.MathViz.loadLibrary('Plotly', [
+                        'https://cdn.staticfile.org/plotly.js/2.27.0/plotly.min.js',
+                        'https://cdn.jsdelivr.net/npm/plotly.js@2.27.0/dist/plotly.min.js',
+                        'https://unpkg.com/plotly.js@2.27.0/dist/plotly.min.js'
+                    ]);
+                }
+                if (typeof math === 'undefined') {
+                    await window.MathViz.loadLibrary('MathJS', [
+                        'https://cdn.staticfile.org/mathjs/11.11.0/math.min.js',
+                        'https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.min.js',
+                        'https://unpkg.com/mathjs@11.11.0/lib/browser/math.min.js'
+                    ]);
+                }
+                if (!window.MathViz.checkLibraries()) {
+                    throw new Error('必需库加载失败');
+                }
+
+                // 应用脚本依赖 mathjs，必须在库就绪后按顺序注入
+                const files = [
+                    'js/math-core.js',
+                    'js/assistant.js',
+                    'js/visualizer.js',
+                    'js/ui.js',
+                    'js/main.js'
+                ];
+                for (const src of files) {
+                    await new Promise((resolve, reject) => {
+                        const sc = document.createElement('script');
+                        sc.src = src;
+                        sc.onload = resolve;
+                        sc.onerror = () => reject(new Error('脚本加载失败: ' + src));
+                        document.body.appendChild(sc);
+                    });
+                }
+                window.dispatchEvent(new CustomEvent('mathviz:ready'));
+            } catch (e) {
+                console.error(e);
+                window.MathViz.showLibraryError(e.message);
+            }
+        })();
+    </script>
+
+    <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet" crossorigin>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>数学函数可视化与性质分析工具</h1>
+        <p class="subtitle">2D / 3D 绘图 · 零点 · 极值 · 单调性 · 凹凸性 · 渐近线 · 积分 · 极限 · 泰勒展开</p>
+    </header>
+
+    <div class="tabs">
+        <button class="tab active" data-mode="2d">2D 图像</button>
+        <button class="tab" data-mode="3d">3D 曲面</button>
+    </div>
+
+    <div class="layout">
+        <!-- 左侧：输入与分析 -->
+        <div>
+            <div class="panel">
+                <h2>函数输入</h2>
+
+                <div id="view-switch" class="view-row">
+                    <button class="view-btn active" data-view="explicit" title="y = f(x)，可用 ; 分隔多个函数">显函数</button>
+                    <button class="view-btn" data-view="parametric" title="x(t), y(t)">参数方程</button>
+                    <button class="view-btn" data-view="polar" title="r = r(θ)">极坐标</button>
+                    <button class="view-btn" data-view="implicit" title="f(x,y) = 0">隐函数</button>
+                </div>
+
+                <div id="panel-explicit">
+                    <div class="field">
+                        <label for="function-expr">y = f(x)，多个函数用 ; 分隔（可求交点）</label>
+                        <input type="text" id="function-expr" value="sin(x)" placeholder="例如 sin(x) + x^2/4 ; x/2" spellcheck="false">
+                    </div>
+                </div>
+
+                <div id="panel-parametric" style="display:none;">
+                    <div class="field">
+                        <label for="param-x">x(t) =</label>
+                        <input type="text" id="param-x" value="3*cos(t)" spellcheck="false">
+                    </div>
+                    <div class="field">
+                        <label for="param-y">y(t) =</label>
+                        <input type="text" id="param-y" value="2*sin(t)" spellcheck="false">
+                    </div>
+                </div>
+
+                <div id="panel-polar" style="display:none;">
+                    <div class="field">
+                        <label for="polar-r">r(θ) =</label>
+                        <input type="text" id="polar-r" value="1 - cos(theta)" spellcheck="false">
+                    </div>
+                </div>
+
+                <div id="panel-implicit" style="display:none;">
+                    <div class="field">
+                        <label for="implicit-expr">f(x, y) = 0（也支持 x^2 + y^2 = 9 写法）</label>
+                        <input type="text" id="implicit-expr" value="x^2 + y^2 - 9" spellcheck="false">
+                    </div>
+                </div>
+
+                <div id="panel-3d" style="display:none;">
+                    <div class="field">
+                        <label for="function-expr-3d">z = f(x, y)</label>
+                        <input type="text" id="function-expr-3d" value="sin(sqrt(x^2 + y^2))" spellcheck="false">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label id="range-label-x">x 范围</label>
+                    <div class="range-row">
+                        <input type="text" id="x-min" value="-10">
+                        <input type="text" id="x-max" value="10">
+                    </div>
+                </div>
+                <div class="field">
+                    <label id="range-label-y">y 范围</label>
+                    <div class="range-row">
+                        <input type="text" id="y-min" value="-5">
+                        <input type="text" id="y-max" value="5">
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn" id="plot-btn">绘制图像</button>
+                    <button class="btn ghost" id="clear-btn">清空</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>常用函数</h2>
+                <div class="presets">
+                    <button class="preset-btn" data-expr="sin(x)" data-mode="2d">sin(x)</button>
+                    <button class="preset-btn" data-expr="x^2 - 4" data-mode="2d">x²-4</button>
+                    <button class="preset-btn" data-expr="exp(-x^2/4) * cos(3*x)" data-mode="2d">阻尼振荡</button>
+                    <button class="preset-btn" data-expr="tan(x)" data-mode="2d">tan(x)</button>
+                    <button class="preset-btn" data-expr="x^2 ; 2*x" data-mode="2d">交点示例</button>
+                    <button class="preset-btn" data-expr="log(x)/x" data-mode="2d">ln(x)/x</button>
+                    <button class="preset-btn" data-expr="3*cos(t)|2*sin(t)" data-mode="2d-parametric">椭圆</button>
+                    <button class="preset-btn" data-expr="t*cos(t)/10|t*sin(t)/10" data-mode="2d-parametric">螺线</button>
+                    <button class="preset-btn" data-expr="1-cos(theta)" data-mode="2d-polar">心形线</button>
+                    <button class="preset-btn" data-expr="sin(3*theta)" data-mode="2d-polar">三叶玫瑰</button>
+                    <button class="preset-btn" data-expr="x^2+y^2-9" data-mode="2d-implicit">圆</button>
+                    <button class="preset-btn" data-expr="x^3+y^3-3*x*y" data-mode="2d-implicit">叶形线</button>
+                    <button class="preset-btn" data-expr="sin(x) * cos(y)" data-mode="3d">sin·cos 曲面</button>
+                    <button class="preset-btn" data-expr="(x^2 - y^2)/10" data-mode="3d">马鞍面</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>性质分析</h2>
+                <div id="properties-panel"><p class="empty">绘制显函数后在此显示分析报告。</p></div>
+            </div>
+        </div>
+
+        <!-- 右侧：图像 + 数据 + 助手 -->
+        <div>
+            <div class="panel graph-wrapper">
+                <div id="graph-container" class="graph-container"></div>
+                <div id="loading-indicator">
+                    <div class="loading-spinner"></div>
+                    <div>正在计算并绘制…</div>
+                </div>
+            </div>
+            <div id="graph-error"></div>
+
+            <div class="panel">
+                <h2>数值数据</h2>
+                <div class="btn-row" style="margin:0 0 10px;">
+                    <button class="btn ghost" id="table-btn">生成数值表</button>
+                    <button class="btn ghost" id="csv-btn">导出 CSV</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="table-body"><tr><td colspan="3" class="empty">暂无数据</td></tr></table>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>智能助手</h2>
+                <div class="quick-row">
+                    <button class="quick-btn" data-question="零点">零点</button>
+                    <button class="quick-btn" data-question="导数">导数</button>
+                    <button class="quick-btn" data-question="积分从 0 到 3.14">定积分</button>
+                    <button class="quick-btn" data-question="x 趋近于 0 的极限">极限</button>
+                    <button class="quick-btn" data-question="在 x=0 处 4 阶泰勒展开">泰勒展开</button>
+                    <button class="quick-btn" data-question="渐近线">渐近线</button>
+                    <button class="quick-btn" data-question="单调性">单调性</button>
+                    <button class="quick-btn" data-question="凹凸性">凹凸性</button>
+                </div>
+                <div class="chat-box" id="chat-messages"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chat-input" placeholder="输入表达式绘图，或提问：积分从 0 到 2 / 求导 / 零点…" spellcheck="false">
+                    <button class="btn" id="send-btn">发送</button>
+                </div>
+                <div id="perf-info">就绪</div>
+            </div>
+        </div>
+    </div>
+
+    <footer>开源项目 · 基于 Plotly.js 与 Math.js 构建 · MIT License</footer>
+</div>
+
+<!-- 应用脚本由头部加载器在第三方库就绪后动态注入，保证加载顺序 -->
+</body>
+</html>

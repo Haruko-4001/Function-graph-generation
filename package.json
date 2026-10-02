@@ -1,0 +1,25 @@
+{
+  "name": "math-function-visualizer",
+  "version": "2.0.0",
+  "description": "数学函数可视化与性质分析工具：2D/3D 绘图、零点/极值/单调性/凹凸性/渐近线分析、定积分、极限、泰勒展开与智能求解助手",
+  "keywords": [
+    "math",
+    "function",
+    "visualizer",
+    "plotly",
+    "calculus",
+    "plotting",
+    "analysis"
+  ],
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node tests/math-core.test.js"
+  },
+  "devDependencies": {
+    "mathjs": "^11.11.0"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

@@ -1,0 +1,162 @@
+/**
+ * styles.css —— 数学函数可视化与性质分析工具
+ * 深色主题，响应式双栏布局。
+ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --bg-1: #1a1a2e;
+    --bg-2: #16213e;
+    --bg-3: #0f3460;
+    --accent: #64ffda;
+    --accent-dim: rgba(100, 255, 218, .25);
+    --panel-bg: rgba(255, 255, 255, .06);
+    --panel-border: rgba(255, 255, 255, .12);
+    --text-dim: rgba(255, 255, 255, .75);
+}
+
+body {
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+    min-height: 100vh;
+    color: #fff;
+    overflow-x: hidden;
+    padding: 20px;
+}
+
+.container { max-width: 1440px; margin: 0 auto; }
+
+/* ---------- 头部与选项卡 ---------- */
+
+header { text-align: center; margin-bottom: 22px; }
+header h1 { font-size: 2rem; margin-bottom: 8px; letter-spacing: 1px; }
+header .subtitle { opacity: .75; font-size: .92rem; }
+
+.tabs { display: flex; justify-content: center; gap: 12px; margin-bottom: 18px; }
+.tab {
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .15);
+    color: #fff; padding: 9px 26px; border-radius: 24px;
+    cursor: pointer; transition: all .25s; font-size: .95rem;
+}
+.tab:hover { background: rgba(255, 255, 255, .18); }
+.tab.active { background: var(--accent); color: #10233a; font-weight: 600; border-color: var(--accent); }
+
+/* ---------- 布局 ---------- */
+
+.layout { display: grid; grid-template-columns: 400px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } }
+
+.panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px; padding: 18px; margin-bottom: 18px;
+    backdrop-filter: blur(6px);
+}
+.panel h2 { font-size: 1.05rem; margin-bottom: 14px; color: var(--accent); }
+
+/* ---------- 表单 ---------- */
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: .84rem; opacity: .8; margin-bottom: 5px; }
+
+input[type="text"] {
+    width: 100%; padding: 9px 12px; border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    background: rgba(0, 0, 0, .3); color: #fff; font-size: .95rem;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+input[type="text"]:focus { outline: none; border-color: var(--accent); }
+
+.range-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.range-row input { font-family: inherit; }
+
+.view-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.view-btn {
+    flex: 1; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .15);
+    color: #fff; padding: 7px 6px; border-radius: 8px; cursor: pointer; font-size: .84rem;
+    white-space: nowrap;
+}
+.view-btn.active { background: var(--accent-dim); border-color: var(--accent); }
+
+.btn {
+    background: var(--accent); color: #10233a; border: none; padding: 10px 18px;
+    border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .95rem;
+    transition: all .2s;
+}
+.btn:hover { filter: brightness(1.1); }
+.btn.ghost { background: rgba(255, 255, 255, .12); color: #fff; }
+.btn.ghost:hover { background: rgba(255, 255, 255, .22); }
+.btn-row { display: flex; gap: 10px; margin-top: 14px; }
+
+/* ---------- 预设 ---------- */
+
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.preset-btn {
+    background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .15);
+    color: #fff; padding: 6px 12px; border-radius: 16px; cursor: pointer;
+    font-size: .8rem; font-family: 'Consolas', monospace;
+}
+.preset-btn:hover { background: var(--accent-dim); }
+
+/* ---------- 图像区 ---------- */
+
+.graph-wrapper { position: relative; }
+.graph-container {
+    width: 100%; height: 540px; border-radius: 12px;
+    background: rgba(0, 0, 0, .25); overflow: hidden;
+}
+#loading-indicator {
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+    background: rgba(10, 20, 40, .75); border-radius: 12px; z-index: 5;
+}
+.loading-spinner {
+    width: 38px; height: 38px; border: 4px solid rgba(255, 255, 255, .2);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#graph-error {
+    display: none; margin: -8px 0 18px; padding: 10px 14px; border-radius: 8px;
+    background: rgba(255, 107, 107, .18); border: 1px solid rgba(255, 107, 107, .5);
+    color: #ffb3b3; font-size: .88rem;
+}
+
+/* ---------- 性质报告 ---------- */
+
+#properties-panel { font-size: .87rem; line-height: 1.7; max-height: 340px; overflow-y: auto; }
+#properties-panel .prop { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px dashed rgba(255, 255, 255, .1); }
+#properties-panel .prop .k { color: var(--accent); min-width: 76px; flex-shrink: 0; }
+#properties-panel .empty, .empty { opacity: .6; }
+
+/* ---------- 数值表 ---------- */
+
+.table-wrap { max-height: 220px; overflow: auto; border-radius: 8px; }
+#table-body { width: 100%; border-collapse: collapse; font-size: .84rem; font-family: 'Consolas', monospace; }
+#table-body th, #table-body td { padding: 5px 10px; text-align: right; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+#table-body th { color: var(--accent); position: sticky; top: 0; background: #16213e; }
+
+/* ---------- 聊天助手 ---------- */
+
+.chat-box { height: 250px; overflow-y: auto; padding-right: 6px; margin-bottom: 10px; }
+.msg {
+    margin-bottom: 10px; padding: 9px 12px; border-radius: 10px;
+    font-size: .86rem; line-height: 1.65; max-width: 94%;
+    white-space: pre-wrap; word-break: break-word;
+}
+.msg.user { background: rgba(100, 255, 218, .16); margin-left: auto; }
+.msg.bot { background: rgba(255, 255, 255, .09); }
+.chat-input-row { display: flex; gap: 8px; }
+.quick-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.quick-btn {
+    background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .15);
+    color: #fff; padding: 5px 10px; border-radius: 14px; cursor: pointer; font-size: .78rem;
+}
+.quick-btn:hover { background: var(--accent-dim); }
+
+#perf-info { margin-top: 10px; font-size: .78rem; opacity: .65; }
+
+footer { text-align: center; margin-top: 26px; opacity: .6; font-size: .82rem; }
