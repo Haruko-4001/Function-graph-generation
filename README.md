@@ -2,6 +2,8 @@
 
 一个开箱即用的**纯前端**数学函数研究工具：不只是画图，还能对函数做**系统性的性质分析**与**带步骤的数值求解**。适合教学演示、作业验证与日常数学研究。
 
+> 在线体验：<https://haruko-4001.github.io/Function-graph-generation/>
+
 ## ✨ 功能特性
 
 ### 绘图
@@ -69,7 +71,7 @@ npm run build:offline    # 生成离线版（约 4.3 MB，完全不联网也能�
 产物可直接：微信/邮件发送、双击打开、丢到任意静态托管（GitHub Gist、OSS、对象存储、Netlify Drop）。
 打包脚本会把应用脚本内嵌为 `<script type="text/x-app">`，加载器在库就绪后按序执行，行为与开发版完全一致。
 
-### 方案 B：GitHub Pages（推荐，开源项目标配，免费 + 有正式网址）
+### 方案 B：GitHub Pages（本仓库已启用，线上地址见文首）
 
 1. 把项目推到 GitHub 仓库（`git add . && git commit && git push`）
 2. 仓库页面 → **Settings → Pages**
