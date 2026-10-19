@@ -37,6 +37,42 @@
                 return typeof Plotly !== 'undefined' && typeof math !== 'undefined';
             },
 
+            /**
+             * 按顺序执行应用脚本。
+             * 若页面内嵌了 <script type="text/x-app"> 源码块（单文件发行版）则直接执行；
+             * 否则从外部 js 目录加载（开发版）。
+             */
+            loadAppScripts: function () {
+                const embedded = document.querySelectorAll('script[type="text/x-app"]');
+                if (embedded.length) {
+                    embedded.forEach(function (node) {
+                        const sc = document.createElement('script');
+                        sc.textContent = node.textContent;
+                        sc.dataset.src = node.dataset.name || '';
+                        document.head.appendChild(sc);
+                    });
+                    return Promise.resolve();
+                }
+                const files = [
+                    'js/math-core.js',
+                    'js/assistant.js',
+                    'js/visualizer.js',
+                    'js/ui.js',
+                    'js/main.js'
+                ];
+                return files.reduce(function (chain, src) {
+                    return chain.then(function () {
+                        return new Promise(function (resolve, reject) {
+                            const sc = document.createElement('script');
+                            sc.src = src;
+                            sc.onload = resolve;
+                            sc.onerror = function () { reject(new Error('脚本加载失败: ' + src)); };
+                            document.body.appendChild(sc);
+                        });
+                    });
+                }, Promise.resolve());
+            },
+
             showLibraryError: function (message) {
                 message = message || '库加载失败，请检查网络连接后刷新';
                 let box = document.getElementById('library-error');
@@ -71,23 +107,8 @@
                     throw new Error('必需库加载失败');
                 }
 
-                // 应用脚本依赖 mathjs，必须在库就绪后按顺序注入
-                const files = [
-                    'js/math-core.js',
-                    'js/assistant.js',
-                    'js/visualizer.js',
-                    'js/ui.js',
-                    'js/main.js'
-                ];
-                for (const src of files) {
-                    await new Promise((resolve, reject) => {
-                        const sc = document.createElement('script');
-                        sc.src = src;
-                        sc.onload = resolve;
-                        sc.onerror = () => reject(new Error('脚本加载失败: ' + src));
-                        document.body.appendChild(sc);
-                    });
-                }
+                // 应用脚本依赖 mathjs，必须在库就绪后按顺序执行
+                await window.MathViz.loadAppScripts();
                 window.dispatchEvent(new CustomEvent('mathviz:ready'));
             } catch (e) {
                 console.error(e);

@@ -14,7 +14,9 @@
   "license": "MIT",
   "type": "commonjs",
   "scripts": {
-    "test": "node tests/math-core.test.js"
+    "test": "node tests/math-core.test.js",
+    "build": "node build.js",
+    "build:offline": "node build.js --offline"
   },
   "devDependencies": {
     "mathjs": "^11.11.0"

@@ -16,7 +16,7 @@
 ### 性质分析（自动生成报告）
 - 零点（**Brent 方法**，含不变号的切触零点检测）
 - 极大 / 极小值、单调区间
-- 凹凸区间与拐点（二阶导数变号 + 二分精化）
+- 凹凸区间与拐点（二阶导数变号 + Brent 精化）
 - 垂直 / 水平 / **斜渐近线**
 - 奇偶性、周期性、值域、定义域（未定义点检测）
 
@@ -52,6 +52,40 @@ npx serve .
 
 > 依赖 Plotly.js 与 Math.js，默认从公共 CDN 加载（含多 CDN 回退），需联网。
 
+## 🌐 部署与分享
+
+> 「一个 HTML 文件」和「一个网址」是两件事：**文件**可以直接发给别人双击打开，
+> **网址**则必须有一个静态托管服务。下面三种方式按需选择。
+
+### 方案 A：单文件 HTML（最快，适合发给别人 / 上传任意托管）
+
+把 `index.html + css + js` 打包成一个自包含 HTML：
+
+```bash
+npm run build            # 生成 dist/math-function-visualizer.html（约 111 KB，库走 CDN）
+npm run build:offline    # 生成离线版（约 4.3 MB，完全不联网也能用）
+```
+
+产物可直接：微信/邮件发送、双击打开、丢到任意静态托管（GitHub Gist、OSS、对象存储、Netlify Drop）。
+打包脚本会把应用脚本内嵌为 `<script type="text/x-app">`，加载器在库就绪后按序执行，行为与开发版完全一致。
+
+### 方案 B：GitHub Pages（推荐，开源项目标配，免费 + 有正式网址）
+
+1. 把项目推到 GitHub 仓库（`git add . && git commit && git push`）
+2. 仓库页面 → **Settings → Pages**
+3. Source 选 **Deploy from a branch**，Branch 选 `main`、目录选 `/ (root)`
+4. 保存后约 1 分钟，得到网址：`https://<用户名>.github.io/<仓库名>/`
+
+之后每次 `git push` 都会自动更新线上版本。
+
+### 方案 C：拖拽式托管（无需 Git）
+
+- **Netlify Drop**：打开 <https://app.netlify.com/drop>，把项目文件夹拖进去，即时得到 `xxx.netlify.app`
+- **Vercel / Cloudflare Pages**：导入仓库或上传文件夹，同样一键得到网址
+
+> 无论哪种方式都不需要后端：本项目是纯静态页面，只有 CDN 依赖。
+> 若目标环境无法访问公网 CDN，请发布 `--offline` 版本。
+
 ## 📁 项目结构
 
 ```
@@ -69,6 +103,8 @@ math_function2.0/
 │   └── math-core.test.js  # 核心算法单元测试
 ├── examples/
 │   └── examples.md     # 推荐示例函数集
+├── build.js            # 单文件打包脚本（--offline 可内联第三方库）
+├── dist/               # 打包产物（git 忽略，npm run build 生成）
 ├── package.json
 ├── LICENSE             # MIT
 └── README.md
