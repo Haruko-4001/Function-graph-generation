@@ -188,7 +188,8 @@ math_function2.0/
 │   ├── smoke.mjs       # 浏览器端到端冒烟
 │   └── mcp-smoke.mjs   # MCP 协议冒烟
 ├── docs/
-│   └── OPTIMIZATION.md # 架构优化方案（参考 Math-To-Manim）
+│   ├── OPTIMIZATION.md      # 架构优化方案（参考 Math-To-Manim）
+│   └── EDUCATION-UPGRADE.md # 面向教材与题型的教学化升级方案
 ├── .github/workflows/
 │   └── ci.yml          # Node 18/20/22 矩阵测试 + 打包
 ├── examples/
