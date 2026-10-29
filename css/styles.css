@@ -1418,6 +1418,66 @@ footer { color: var(--muted); border-top: 1px solid var(--line); padding-top: 14
 .book-topics li:last-child { border-bottom: 0; }
 .book-topic-no { flex-shrink: 0; color: var(--muted); font: 10px var(--mono); letter-spacing: .04em; }
 
+/* ---------- 精讲样章 ---------- */
+
+.lesson-sample { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line-strong); }
+.lesson-sample-head h3 { margin: 10px 0 8px; font-family: var(--serif); font-size: 20px; font-weight: 600; }
+.lesson-sample-head p { color: var(--text-secondary); font-size: 12.5px; line-height: 1.9; }
+.lesson-sample-note { margin-top: 6px; color: var(--muted) !important; font-size: 11px !important; }
+.lesson-sections { margin-top: 16px; }
+.lesson-sec { border-bottom: 1px solid var(--line); }
+.lesson-sec summary {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 11px 0;
+    cursor: pointer;
+    list-style: none;
+}
+.lesson-sec summary::-webkit-details-marker { display: none; }
+.lesson-sec-no { flex-shrink: 0; color: var(--accent); font: 10px var(--mono); }
+.lesson-sec-title { color: var(--text); font-family: var(--serif); font-size: 15px; font-weight: 600; }
+.lesson-sec-count { margin-left: auto; color: var(--muted); font: 10px var(--mono); }
+.lesson-body { padding: 0 0 18px 0; }
+.lesson-lead { margin-bottom: 8px; color: var(--text) !important; font-size: 12.5px !important; font-weight: 500; }
+.lesson-body p { margin-bottom: 8px; color: var(--text-secondary); font-size: 12.5px; line-height: 1.95; }
+.lesson-body h5 { margin: 14px 0 6px; color: var(--muted); font-size: 10.5px; font-weight: 500; letter-spacing: .08em; }
+.lesson-sample code {
+    padding: 1px 4px;
+    border-radius: 2px;
+    color: #33443a;
+    background: #f1ebdf;
+    font-family: var(--mono);
+    font-size: .92em;
+}
+.lesson-method { display: flex; flex-direction: column; gap: 5px; padding-left: 18px; color: var(--text-secondary); font-size: 12px; line-height: 1.8; }
+.lesson-examples { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+.lesson-example { padding-left: 13px; border-left: 2px solid #d6dfd2; }
+.lesson-example-head { display: flex; gap: 9px; align-items: center; margin-bottom: 6px; }
+.lesson-example-head b { color: var(--text); font-family: var(--serif); font-size: 13px; font-weight: 600; }
+.lesson-problem { color: var(--text) !important; font-size: 12.5px !important; }
+.lesson-analysis { color: var(--text-secondary) !important; font-size: 12px !important; }
+.lesson-analysis b, .lesson-answer-line b, .lesson-link b, .lesson-pitfall b {
+    display: inline-block;
+    min-width: 70px;
+    margin-right: 4px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.lesson-answer { margin-top: 8px; }
+.lesson-answer summary {
+    display: inline-block;
+    padding: 2px 0;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 11.5px;
+}
+.lesson-answer summary:hover { text-decoration: underline; }
+.lesson-steps { margin: 10px 0; padding-left: 20px; color: var(--text-secondary); font-size: 12px; line-height: 1.9; }
+.lesson-answer-line { margin-top: 8px; color: var(--text) !important; }
+.lesson-link { padding: 7px 9px; border-left: 2px solid var(--accent); background: #f3f6f0; color: var(--text-secondary) !important; font-size: 11.5px !important; }
+.lesson-pitfall { color: var(--warning) !important; font-size: 11.5px !important; }
+
 /* ---------- 响应式 ---------- */
 
 @media (min-width: 1500px) {

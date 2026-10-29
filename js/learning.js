@@ -17,6 +17,8 @@
     const patternById = patternLib ? patternLib.byId : {};
     const bookLib = window.MathBooks || null;
     const books = bookLib ? bookLib.books : [];
+    const lessonLib = window.MathLessons || null;
+    const lessons = lessonLib ? lessonLib.lessons : {};
 
     const $ = (id) => document.getElementById(id);
     const overlay = $('learn-overlay');
@@ -485,10 +487,51 @@
             + '<p class="learn-summary">' + esc(c.summary) + '</p></div>'
             + '<section class="learn-section"><h4>本章小节</h4><ol class="book-topics">' + topics + '</ol></section>'
             + (pats ? '<section class="learn-section"><h4>对应题型卡</h4><div class="learn-chips">' + pats + '</div></section>' : '')
+            + lessonHtml(c.id)
             + '<section class="learn-section"><h4>怎么用这条书目</h4>'
             + '<p class="learn-summary">先按小节读一遍，再打开对应题型卡看“识别信号—通法—易错点”，'
             + '最后去实验室或实验页签动手验证。书目只负责结构与路径，具体方法在题型卡里。</p></section>';
         card.scrollTop = 0;
+    }
+
+    function lessonHtml(chapterId) {
+        const lesson = lessons[chapterId];
+        if (!lesson) return '';
+        const sections = lesson.sections.map((sec, si) => {
+            const body = (sec.body || []).map((p) => '<p>' + p + '</p>').join('');
+            const method = (sec.method || []).map((m) => '<li>' + esc(m) + '</li>').join('');
+            const examples = sec.examples.map((ex) => {
+                const steps = ex.steps.map((st) => '<li>' + st + '</li>').join('');
+                return '<article class="lesson-example">'
+                    + '<div class="lesson-example-head"><span class="tag">' + esc(ex.tag) + '</span>'
+                    + '<b>' + esc(ex.id) + '</b></div>'
+                    + '<p class="lesson-problem">' + ex.problem + '</p>'
+                    + '<p class="lesson-analysis"><b>分析</b>' + ex.analysis + '</p>'
+                    + '<details class="lesson-answer"><summary>查看解答与答案</summary>'
+                    + '<ol class="lesson-steps">' + steps + '</ol>'
+                    + '<p class="lesson-answer-line"><b>答案</b>' + ex.answer + '</p>'
+                    + '<p class="lesson-link"><b>与正文的关系</b>' + ex.link + '</p>'
+                    + '<p class="lesson-pitfall"><b>易错</b>' + ex.pitfall + '</p>'
+                    + '</details></article>';
+            }).join('');
+
+            return '<details class="lesson-sec" ' + (si === 0 ? 'open' : '') + '>'
+                + '<summary><span class="lesson-sec-no">' + esc(sec.id) + '</span>'
+                + '<span class="lesson-sec-title">' + esc(sec.title.replace(/^\d+\.\d+\s*/, '')) + '</span>'
+                + '<span class="lesson-sec-count">' + sec.examples.length + ' 例</span></summary>'
+                + '<div class="lesson-body"><p class="lesson-lead">' + esc(sec.lead) + '</p>'
+                + body
+                + '<h5>通法</h5><ol class="lesson-method">' + method + '</ol>'
+                + '<div class="lesson-examples">' + examples + '</div></div></details>';
+        }).join('');
+
+        return '<section class="lesson-sample"><div class="lesson-sample-head">'
+            + '<div class="learn-badges"><span class="tag">' + esc(lesson.badge) + '</span>'
+            + '<span class="tag ghost">' + esc(lesson.title) + '</span></div>'
+            + '<h3>' + esc(lesson.title) + ' · 精讲</h3>'
+            + '<p>' + esc(lesson.intro) + '</p>'
+            + '<p class="lesson-sample-note">' + esc(lesson.note) + '</p></div>'
+            + '<div class="lesson-sections">' + sections + '</div></section>';
     }
 
     /* ---------------- 结论库 ---------------- */
