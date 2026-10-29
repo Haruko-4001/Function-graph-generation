@@ -133,6 +133,30 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 #properties-panel .prop-note { margin: 10px 0 0; font-size: 11px; line-height: 1.6; opacity: .55; }
 #properties-panel .empty, .empty { opacity: .6; }
 
+/* 分步讲解 */
+.story-progress { font-size: 12px; opacity: .65; margin-left: auto; font-variant-numeric: tabular-nums; }
+.story-hint { margin: 0; font-size: 12px; line-height: 1.7; opacity: .6; }
+.story-caption {
+    position: absolute;
+    left: 18px; right: 18px; bottom: 16px;
+    z-index: 4;
+    padding: 11px 14px;
+    border-radius: 8px;
+    background: rgba(6, 16, 28, .84);
+    border-left: 3px solid var(--accent);
+    font-size: 14px;
+    line-height: 1.65;
+    color: #e9f2fb;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .22s ease, transform .22s ease;
+}
+.story-caption.show { opacity: 1; transform: translateY(0); }
+.story-facts { margin-top: 8px; font-size: 12px; opacity: .75; }
+.story-facts .ok { color: #50fa7b; }
+.story-facts .bad { color: #ff6b6b; }
+
 /* ---------- 数值表 ---------- */
 
 .table-wrap { max-height: 220px; overflow: auto; border-radius: 8px; }

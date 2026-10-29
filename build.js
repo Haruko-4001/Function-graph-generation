@@ -26,6 +26,9 @@ const outName = outIdx >= 0 && args[outIdx + 1] ? args[outIdx + 1] : null;
 
 const APP_FILES = [
     'js/math-core.js',
+    'js/facts.js',
+    'js/storyboard.js',
+    'js/player.js',
     'js/assistant.js',
     'js/visualizer.js',
     'js/ui.js',

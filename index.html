@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数学函数可视化与性质分析工具 v2.1</title>
+    <title>数学函数可视化与性质分析工具 v2.2</title>
     <meta name="description" content="开源数学函数可视化工具：2D/3D 绘图、零点/极值/单调性/凹凸性/渐近线分析、定积分、极限、泰勒展开与智能求解助手">
 
     <!-- 库加载器：多 CDN 回退 -->
@@ -55,6 +55,9 @@
                 }
                 const files = [
                     'js/math-core.js',
+                    'js/facts.js',
+                    'js/storyboard.js',
+                    'js/player.js',
                     'js/assistant.js',
                     'js/visualizer.js',
                     'js/ui.js',
@@ -229,12 +232,26 @@
                 <h2>性质分析</h2>
                 <div id="properties-panel"><p class="empty">绘制显函数后在此显示分析报告。</p></div>
             </div>
+
+            <div class="panel">
+                <h2>分步讲解</h2>
+                <div class="btn-row" style="margin:0 0 10px;">
+                    <button class="btn" id="story-btn">讲解动画</button>
+                    <button class="btn ghost" id="story-stop-btn">停止</button>
+                    <span class="story-progress" id="story-progress">—</span>
+                </div>
+                <p class="story-hint">
+                    按「形状 → 零点 → 极值 → 单调 → 凹凸 → 渐近线」的顺序播放，字幕显示在图像底部。播放期间图像会被替换，结束后自动恢复。
+                </p>
+                <div class="story-facts" id="story-facts"></div>
+            </div>
         </div>
 
         <!-- 右侧：图像 + 数据 + 助手 -->
         <div>
             <div class="panel graph-wrapper">
                 <div id="graph-container" class="graph-container"></div>
+                <div id="story-caption" class="story-caption"></div>
                 <div id="loading-indicator">
                     <div class="loading-spinner"></div>
                     <div>正在计算并绘制…</div>

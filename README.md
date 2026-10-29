@@ -1,4 +1,4 @@
-# 数学函数可视化与性质分析工具（Math Function Visualizer v2.1）
+# 数学函数可视化与性质分析工具（Math Function Visualizer v2.2）
 
 一个开箱即用的**纯前端**数学函数研究工具：不只是画图，还能对函数做**系统性的性质分析**与**带步骤的数值求解**。适合教学演示、作业验证与日常数学研究。
 
@@ -25,6 +25,29 @@
 - **定义域**：可求值率 + 未定义点（含极点）
 
 > 报告基于**采样与数值迭代**，不是符号推导。面板底部会说明这一点，避免把 `≈[-16, 16]` 误读成 `1/x` 的真实值域。
+
+### 分步讲解（v2.2 新增）
+
+把「一张图 + 一张表」变成一段 **15~30 秒的分步讲解**，按教学顺序播放：
+
+```
+标题 → 画曲线 → 扫掠 → 零点 → 极值 → 单调区间 → 拐点 → 渐近线 → 自检总结
+```
+
+- 每一帧都是「重放前 N 个镜头」的累积状态，因此可暂停、可跳步、可重播
+- 字幕贴在图像底部（像视频字幕），不遮挡坐标轴
+- **每条结论都带独立复算的残差**：零点代回、极值验一阶导、拐点验二阶导、
+  积分双精度交叉验证、奇偶/周期抽样比对；自检未通过的点会画成红色 ✕
+- 分镜不是硬编码的动画代码，而是一份**固定动词表描述的数据**（见
+  [`docs/OPTIMIZATION.md`](docs/OPTIMIZATION.md) 第 4.2 节），因此可校验、可复现、可换渲染器
+
+三层结构（对应流水线的 03 → 04 → 05）：
+
+| 层 | 文件 | 职责 |
+|---|---|---|
+| Facts | `js/facts.js` | 把分析结果升级为「带 residual / tol / ok 的断言集」 |
+| Storyboard | `js/storyboard.js` | 断言集 → 分镜（动词白名单 + 5 条契约校验） |
+| Player | `js/player.js` | 分镜 → Plotly 逐帧渲染 |
 
 ### 智能助手（中文自然语言，附求解步骤）
 ```
@@ -75,7 +98,7 @@ npx serve .
 把 `index.html + css + js` 打包成一个自包含 HTML：
 
 ```bash
-npm run build            # 生成 dist/math-function-visualizer.html（约 121 KB，库走 CDN）
+npm run build            # 生成 dist/math-function-visualizer.html（约 169 KB，库走 CDN）
 npm run build:offline    # 生成离线版（约 4.3 MB，完全不联网也能用）
 ```
 
@@ -108,13 +131,19 @@ math_function2.0/
 │   └── styles.css      # 深色主题样式
 ├── js/
 │   ├── math-core.js    # 数学核心（UMD，浏览器/Node 双端）
+│   ├── facts.js        # 数值事实层：带残差的断言集（03_facts）
+│   ├── storyboard.js   # 分镜层：动词表 + 契约校验（04_storyboard）
+│   ├── player.js       # 播放器：分镜 → Plotly 逐帧渲染
 │   ├── visualizer.js   # Plotly 绘图引擎（分块异步计算）
 │   ├── assistant.js    # 自然语言助手（意图识别 + 求解步骤）
 │   ├── ui.js           # 应用控制器（状态/校验/报告/导出）
 │   └── main.js         # 启动引导
 ├── tests/
-│   ├── math-core.test.js  # 核心算法单元测试（38 例）
-│   └── assistant.test.js  # 助手意图与积分限解析测试（24 例）
+│   ├── math-core.test.js   # 核心算法单元测试（40 例）
+│   ├── assistant.test.js   # 助手意图与积分限解析（24 例）
+│   └── storyboard.test.js  # 数值自检与分镜契约（19 例）
+├── docs/
+│   └── OPTIMIZATION.md # 架构优化方案（参考 Math-To-Manim）
 ├── examples/
 │   └── examples.md     # 推荐示例函数集
 ├── build.js            # 单文件打包脚本（--offline 可内联第三方库）
@@ -151,16 +180,17 @@ math_function2.0/
 
 ## ✅ 运行测试
 
-核心算法、助手都可在 Node 下测试（助手会自动 `require` math-core，无需浏览器）：
+核心算法、助手、数值自检与分镜契约都可在 Node 下测试（助手会自动 `require` math-core，无需浏览器）：
 
 ```bash
 npm install   # 仅需 mathjs（测试用）
-npm test      # 62 个用例：math-core 38 + assistant 24
+npm test      # 83 个用例：math-core 40 + assistant 24 + storyboard 19
 ```
 
-覆盖：表达式规范化（含 `stripPrefix`）、零点（含切触）、Brent、极值、单调性、拐点、
-Simpson 积分、极限（含 ∞ 与方向判定）、符号求导、泰勒系数、垂直/水平/斜渐近线、
-值域有界性标记、未定义点、交点、奇偶性、周期、综合分析、积分限解析与意图路由。
+覆盖：表达式规范化（含 `stripPrefix`）、零点（含切触）、Brent、极值、单调性、拐点
+（含「极点不得被当成拐点」）、Simpson 积分、极限（含 ∞ 与方向判定）、符号求导、泰勒系数、
+垂直/水平/斜渐近线、值域有界性标记、未定义点、交点、奇偶性、周期、综合分析、
+积分限解析与意图路由、数值断言残差、分镜动词白名单与五条契约。
 
 ## 🛠 技术栈
 

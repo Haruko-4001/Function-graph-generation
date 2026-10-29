@@ -34,6 +34,10 @@
             this.mode = '2d';               // '2d' | '3d'
             this.view = 'explicit';         // explicit | parametric | polar | implicit
             this.plotter = new root.MathPlotter('graph-container');
+            this.storyPlayer = (typeof root.MathStoryboardPlayer === 'function')
+                ? new root.MathStoryboardPlayer('graph-container')
+                : null;
+            this.story = null;              // { facts, storyboard }
             this.assistant = null;
             this.report = null;
             this.debounceTimer = null;
@@ -90,6 +94,8 @@
                 else if (t.id === 'send-btn') this.sendChat();
                 else if (t.id === 'table-btn') this.renderTable();
                 else if (t.id === 'csv-btn') this.exportCSV();
+                else if (t.id === 'story-btn') this.playStory();
+                else if (t.id === 'story-stop-btn') this.stopStory();
             });
 
             const autoHandler = this.debounce(() => { if (this.autoPlot) this.plot(); }, 800);
@@ -316,6 +322,94 @@
             $('table-body').innerHTML = '<tr><td colspan="3" class="empty">暂无数据</td></tr>';
             $('chat-messages').innerHTML = '';
             this.showError(null);
+        }
+
+        /* ---------------- 分步讲解（facts → storyboard → player） ---------------- */
+
+        async playStory() {
+            if (!this.storyPlayer || !root.MathFacts || !root.MathStoryboard) {
+                this.showError('分步讲解模块未加载');
+                return;
+            }
+            if (this.mode !== '2d' || this.view !== 'explicit') {
+                this.showError('分步讲解目前仅支持显函数模式');
+                return;
+            }
+
+            let exprs, range;
+            try {
+                exprs = this.validateAll();
+                range = readRange();
+            } catch (e) {
+                this.showError(e && e.message ? e.message : String(e));
+                return;
+            }
+
+            this.showError(null);
+            this.stopStory(true);
+            $('story-progress').textContent = '分析中…';
+            $('story-facts').textContent = '';
+            // 让「分析中…」先渲染出来，再做同步的重计算
+            await new Promise((r) => setTimeout(r, 16));
+
+            try {
+                const facts = root.MathFacts.buildFacts(exprs[0], { xMin: range.xMin, xMax: range.xMax });
+                const sb = root.MathStoryboard.buildStoryboard(facts, {
+                    yRange: [range.yMin, range.yMax]
+                });
+                const check = root.MathStoryboard.validateStoryboard(sb);
+                if (!check.ok) throw new Error('分镜校验失败：' + check.errors.join('；'));
+
+                this.story = { facts, storyboard: sb };
+                this.renderFacts(facts);
+                $('story-caption').classList.add('show');
+
+                let acc = 0;
+                const starts = sb.beats.map((b) => { const s = acc; acc += b.seconds; return s; });
+
+                this.storyPlayer.play(sb, {
+                    onStep: (i, beat) => {
+                        $('story-caption').textContent = beat.caption;
+                        $('story-progress').textContent = (i + 1) + '/' + sb.beats.length
+                            + ' · ' + starts[i].toFixed(0) + 's/' + sb.totalSeconds.toFixed(0) + 's';
+                    },
+                    onEnd: () => this.onStoryEnd()
+                });
+            } catch (e) {
+                $('story-progress').textContent = '—';
+                $('story-caption').classList.remove('show');
+                this.showError(e && e.message ? e.message : String(e));
+            }
+        }
+
+        stopStory(silent) {
+            if (this.storyPlayer) this.storyPlayer.stop();
+            if (silent) return;
+            if (!this.story) return;
+            $('story-progress').textContent = '已停止';
+            $('story-caption').classList.remove('show');
+            this.plot();
+        }
+
+        onStoryEnd() {
+            $('story-progress').textContent = '完成';
+            $('story-caption').classList.remove('show');
+            this.plot();
+        }
+
+        renderFacts(facts) {
+            const el = $('story-facts');
+            if (!el) return;
+            const s = facts.summary;
+            const r = s.worstRatio;
+            const ratioText = !Number.isFinite(r) ? '∞' : (r >= 1e4 ? r.toExponential(1) : r.toFixed(2));
+            const worst = s.worstClaim
+                ? '最差残差比 ' + ratioText + '（' + s.worstClaim + '）'
+                : '';
+            el.innerHTML = (s.failed === 0
+                ? '<span class="ok">数值自检 ' + s.passed + '/' + s.total + ' 通过</span>'
+                : '<span class="bad">数值自检 ' + s.passed + '/' + s.total + ' 通过，' + s.failed + ' 条存疑</span>')
+                + (worst ? ' · ' + worst : '');
         }
 
         /* ---------------- 性质报告渲染 ---------------- */

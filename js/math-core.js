@@ -464,6 +464,12 @@
         const xs = linspace(a, b, n);
         const d2 = xs.map((x) => secondDerivative(f, x));
 
+        // 二阶导的特征量级。极点两侧 f'' 也会变号（1/x 在 x=0 两侧就是如此），
+        // 但那里 f'' 会爆炸到 1e20 量级——用这个量表把它们和真拐点区分开。
+        const mags = d2.filter((v) => Number.isFinite(v)).map(Math.abs).sort((p, q) => p - q);
+        const d2Scale = mags.length ? mags[Math.floor(mags.length / 2)] : 0;
+        const d2Limit = Math.max(1e-2, d2Scale * 1e-2);
+
         const intervals = [];
         const inflections = [];
         let curSign = 0, start = a;
@@ -478,10 +484,16 @@
             if (sign !== 0 && sign !== curSign) {
                 // 二阶导变号：在前后两点间用 Brent 法精化拐点
                 const xInf = brent(function (t) { return secondDerivative(f, t); }, xs[i - 1], xs[i], 1e-10);
-                if (Number.isFinite(xInf)) {
+                const atInf = Number.isFinite(xInf) ? secondDerivative(f, xInf) : NaN;
+                const isReal = Number.isFinite(xInf) && Number.isFinite(atInf) && Math.abs(atInf) <= d2Limit;
+                if (isReal) {
                     intervals.push({ from: start, to: xInf, dir: curSign });
                     inflections.push(xInf);
                     start = xInf;
+                } else {
+                    // 不是拐点（多半是极点）：在当前采样处断开区间，但不记拐点
+                    intervals.push({ from: start, to: xs[i - 1], dir: curSign });
+                    start = xs[i];
                 }
                 curSign = sign;
             }

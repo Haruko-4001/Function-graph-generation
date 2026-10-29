@@ -270,6 +270,19 @@ test('无极点函数的值域标记为有界', () => {
     assert(r.undefinedPoints.length === 0);
 });
 
+test('拐点检测不把极点当拐点（1/x 无拐点）', () => {
+    const r = MathCore.analyzeFunction('1/x', { xMin: -10, xMax: 10 });
+    assert(r.inflections.length === 0, '1/x 不应有拐点，实际 ' + JSON.stringify(r.inflections));
+    // 凹凸区间仍应被极点切成两段
+    assert(r.concavity.length === 2, '应有两段凹凸区间，实际 ' + r.concavity.length);
+});
+
+test('真拐点仍然能检测到（x^3 在 0 处）', () => {
+    const r = MathCore.analyzeFunction('x^3', { xMin: -10, xMax: 10 });
+    assert(r.inflections.length === 1, '应检测到 1 个拐点，实际 ' + r.inflections.length);
+    near(r.inflections[0], 0, 1e-4);
+});
+
 test('全区间不可求值时奇偶性不误判为偶函数', () => {
     assert(MathCore.parity('sqrt(-1 - x^2)', -10, 10) === 'none');
 });
