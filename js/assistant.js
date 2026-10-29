@@ -25,6 +25,12 @@
         try { return require('./math-core.js'); } catch (e) { return null; }
     }());
 
+    // 术语库是可选依赖：没有它助手仍可正常工作，只是不能回答「什么是 X」
+    const MathGlossary = root.MathGlossary || (function () {
+        if (typeof require !== 'function') return null;
+        try { return require('./glossary.js'); } catch (e) { return null; }
+    }());
+
     if (!MathCore) throw new Error('assistant.js 依赖 math-core.js，请先加载');
 
     /** 把数字格式化为易读文本 */
@@ -103,6 +109,12 @@
 
         _route(t) {
             const s = t.replace(/\s+/g, '');
+
+            // 0) 术语解释优先：「什么是拐点」不该走「求拐点」的分支
+            if (MathGlossary && MathGlossary.isDefinitionQuestion(s)) {
+                const term = MathGlossary.lookup(s);
+                if (term) return MathGlossary.render(term);
+            }
 
             // 1) 明确意图优先
             if (/二阶导|二阶微分/.test(s)) return this.answerDerivative(2);
@@ -428,6 +440,7 @@
                 '· 极限：「x 趋近于 0 的极限」「x->无穷 的极限」',
                 '· 泰勒：「在 x=0 处 4 阶泰勒展开」',
                 '· 性质：「极值」「单调性」「凹凸」「渐近线」「周期」「奇偶」「值域」「定义域」',
+                '· 术语：「什么是拐点」「渐近线是什么」',
                 '· 交点：输入两个函数（用 ; 分隔）后问「交点」'
             ].join('\n');
         }

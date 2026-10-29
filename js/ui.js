@@ -38,6 +38,7 @@
                 ? new root.MathStoryboardPlayer('graph-container')
                 : null;
             this.story = null;              // { facts, storyboard }
+            this.params = {};               // 参数滑块：{ a: 1, b: 2 }
             this.assistant = null;
             this.report = null;
             this.debounceTimer = null;
@@ -75,9 +76,14 @@
 
         init() {
             this.bindEvents();
+            const restored = this.restoreFromUrl();
+            if (!restored) $('function-expr').value = 'sin(x)';
+            this.syncParams();
             this.updateUI();
-            this.addMessage('bot', this.assistant.helpText());
-            $('function-expr').value = 'sin(x)';
+            this.addMessage('bot', restored
+                ? '已从分享链接恢复：' + this._currentRawInput()
+                    + '（x ∈ [' + val('x-min') + ', ' + val('x-max') + ']）'
+                : this.assistant.helpText());
             this.plot();
             this.startPerfMonitor();
         }
@@ -96,14 +102,35 @@
                 else if (t.id === 'csv-btn') this.exportCSV();
                 else if (t.id === 'story-btn') this.playStory();
                 else if (t.id === 'story-stop-btn') this.stopStory();
+                else if (t.id === 'py-btn') this.exportPython();
+                else if (t.id === 'manifest-btn') this.exportManifest();
+                else if (t.id === 'share-btn') this.copyShareLink();
             });
 
             const autoHandler = this.debounce(() => { if (this.autoPlot) this.plot(); }, 800);
             ['function-expr', 'param-x', 'param-y', 'polar-r', 'implicit-expr',
-             'function-expr-3d', 'x-min', 'x-max', 'y-min', 'y-max'].forEach((id) => {
+             'function-expr-3d', 'x-min', 'x-max', 'y-min', 'y-max', 'slice-pos'].forEach((id) => {
                 const el = $(id);
                 if (el) el.addEventListener('input', autoHandler);
             });
+
+            // 表达式变化时先同步参数滑块，再等待防抖重绘
+            const exprEl = $('function-expr');
+            if (exprEl) exprEl.addEventListener('input', () => this.syncParams());
+
+            // 滑块拖动：更新参数值并快速重绘
+            const sliderBox = $('param-sliders');
+            if (sliderBox) {
+                const quickPlot = this.debounce(() => { if (this.autoPlot) this.plot(); }, 220);
+                sliderBox.addEventListener('input', (e) => {
+                    const key = e.target && e.target.dataset ? e.target.dataset.param : null;
+                    if (!key) return;
+                    this.params[key] = parseFloat(e.target.value);
+                    const label = e.target.parentNode.querySelector('b');
+                    if (label) label.textContent = this.params[key].toFixed(1);
+                    quickPlot();
+                });
+            }
 
             $('chat-input').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -176,6 +203,7 @@
                 this.mode = '2d'; this.view = 'explicit';
                 $('function-expr').value = expr;
             }
+            this.syncParams();
             this.updateUI();
             this.plot();
         }
@@ -191,7 +219,7 @@
                 case 'explicit': {
                     return val('function-expr')
                         .split(/[;；]/)
-                        .map((s) => MathCore.normalizeExpression(s))
+                        .map((s) => this.applyParams(MathCore.normalizeExpression(s)))
                         .filter(Boolean)
                         .slice(0, 6);
                 }
@@ -209,9 +237,67 @@
             return [];
         }
 
+        /* ---------------- 参数滑块 ---------------- */
+
+        /** 把当前参数值代入表达式（无参数时原样返回） */
+        applyParams(expr) {
+            if (!expr) return '';
+            const keys = Object.keys(this.params);
+            if (!keys.length) return expr;
+            let out = expr;
+            for (let i = 0; i < keys.length; i++) {
+                try {
+                    out = MathCore.substituteVariable(out, keys[i], this.params[keys[i]]);
+                } catch (e) { /* 代入失败就保留原式 */ }
+            }
+            return out;
+        }
+
+        /** 根据当前表达式重新识别自由参数，保留已有取值 */
+        syncParams() {
+            if (this.mode !== '2d' || this.view !== 'explicit') {
+                if (Object.keys(this.params).length) { this.params = {}; this.renderParams(); }
+                return;
+            }
+            const raw = String(val('function-expr')).split(/[;；]/)[0] || '';
+            let names = [];
+            try {
+                names = MathCore.freeSymbols(MathCore.normalizeExpression(raw), ['x']);
+            } catch (e) { names = []; }
+
+            const next = {};
+            names.forEach((k) => {
+                if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) return;
+                next[k] = Object.prototype.hasOwnProperty.call(this.params, k) ? this.params[k] : 1;
+            });
+
+            const before = Object.keys(this.params).join(',');
+            const after = Object.keys(next).join(',');
+            this.params = next;
+            // 首次加载时 before === after（都来自链接），但滑块还没渲染，所以要补一次
+            const box = $('param-sliders');
+            const rendered = box ? box.children.length : 0;
+            if (before !== after || rendered !== Object.keys(this.params).length) {
+                this.renderParams();
+            }
+        }
+
+        renderParams() {
+            const box = $('param-sliders');
+            if (!box) return;
+            const keys = Object.keys(this.params);
+            if (!keys.length) { box.innerHTML = ''; return; }
+            box.innerHTML = keys.map((k) => {
+                const v = this.params[k];
+                return '<div class="param-row">'
+                    + '<span class="pk">' + k + ' = <b>' + v.toFixed(1) + '</b></span>'
+                    + '<input type="range" min="-5" max="5" step="0.1" value="' + v + '" data-param="' + k + '">'
+                    + '</div>';
+            }).join('');
+        }
+
         validateAll() {
-            const exprs = this.currentExpressions();
-            if (!exprs.length) throw new Error('请输入函数表达式');
+            const exprs = this.currentExpressions();            if (!exprs.length) throw new Error('请输入函数表达式');
 
             if (this.mode === '3d') {
                 const r = MathCore.validateExpression(exprs[0], ['x', 'y']);
@@ -270,14 +356,34 @@
                 let ok = true;
 
                 if (this.mode === '3d') {
-                    ok = await this.plotter.plotSurface(exprs[0], range.xMin, range.xMax, range.yMin, range.yMax);
-                    this.report = null;
-                    if (ok) this.renderReportUnavailable('3D 曲面模式下暂不提供自动性质分析');
+                    const sliceRaw = String(val('slice-pos')).trim();
+                    let sliceY = null;
+                    if (sliceRaw) {
+                        const c = parseFloat(sliceRaw);
+                        if (!Number.isFinite(c)) throw new Error('切片位置必须为数字');
+                        sliceY = c;
+                    }
+                    ok = await this.plotter.plotSurface(exprs[0], range.xMin, range.xMax, range.yMin, range.yMax,
+                        sliceY === null ? null : { sliceY: sliceY });
+                    if (ok && sliceY !== null) {
+                        const vars = MathCore.freeSymbols(exprs[0], ['x']);
+                        if (vars.indexOf('y') < 0) {
+                            throw new Error('当前曲面表达式不含 y，无法按 y 切片（请检查 z = f(x, y) 的写法）');
+                        }
+                        const sliceExpr = MathCore.substituteVariable(exprs[0], 'y', sliceY);
+                        this.report = MathCore.analyzeFunction(sliceExpr, { xMin: range.xMin, xMax: range.xMax });
+                        this.renderReport('切片 y = ' + MathCore.fmt(sliceY, 4)
+                            + '：f(x, ' + MathCore.fmt(sliceY, 4) + ') = ' + sliceExpr);
+                    } else {
+                        this.report = null;
+                        if (ok) this.renderReportUnavailable('3D 曲面模式下不提供整体性质分析；填「切片」可分析一维切面');
+                    }
                 } else if (this.view === 'explicit') {
                     ok = await this.plotter.plotExplicit(exprs, range.xMin, range.xMax, range.yMin, range.yMax);
                     if (ok) {
                         this.report = MathCore.analyzeFunction(exprs[0], { xMin: range.xMin, xMax: range.xMax });
                         this.renderReport();
+                        if (exprs.length >= 2) this.renderCompare(exprs, range);
                     }
                 } else if (this.view === 'parametric') {
                     ok = await this.plotter.plotParametric(exprs[0], exprs[1], range.xMin, range.xMax, [range.yMin, range.yMax], [range.yMin, range.yMax]);
@@ -298,6 +404,7 @@
                 if (!ok) return;
 
                 this.lastPlotTime = performance.now() - start;
+                this._syncUrl();
                 if (manual) {
                     this.addMessage('bot', '绘制完成，耗时 ' + this.lastPlotTime.toFixed(0) + ' ms。');
                 }
@@ -412,6 +519,200 @@
                 + (worst ? ' · ' + worst : '');
         }
 
+        /* ---------------- 导出（Python 脚本 / 运行清单） ---------------- */
+
+        downloadText(filename, text, mime) {
+            const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        /** 构造一次导出的上下文（facts + storyboard），失败时抛中文错误 */
+        _exportContext() {
+            if (!root.MathFacts || !root.MathStoryboard) throw new Error('导出模块未加载');
+            if (this.mode !== '2d' || this.view !== 'explicit') {
+                throw new Error('导出目前仅支持显函数模式');
+            }
+            const exprs = this.validateAll();
+            const range = readRange();
+            const facts = root.MathFacts.buildFacts(exprs[0], { xMin: range.xMin, xMax: range.xMax });
+            const sb = root.MathStoryboard.buildStoryboard(facts, { yRange: [range.yMin, range.yMax] });
+            return { expression: exprs[0], range, facts, storyboard: sb };
+        }
+
+        exportPython() {
+            try {
+                if (!root.MathCodegen || !root.MathCodeCheck) throw new Error('导出模块未加载');
+                const ctx = this._exportContext();
+                const out = root.MathCodegen.buildPython({
+                    expression: ctx.expression,
+                    xMin: ctx.range.xMin, xMax: ctx.range.xMax,
+                    yMin: ctx.range.yMin, yMax: ctx.range.yMax,
+                    facts: ctx.facts
+                });
+                const check = root.MathCodeCheck.checkPython(out.code);
+                if (!check.ok) throw new Error('生成代码未通过静态检查：' + check.errors.join('；'));
+
+                this.downloadText(out.filename, out.code, 'text/x-python;charset=utf-8');
+                this.addMessage('bot',
+                    '已导出 ' + out.filename + '（' + out.bytes + ' 字节，静态检查通过）。\n'
+                    + '包含 f(x)、' + out.counts.zeros + ' 个零点、' + out.counts.extrema + ' 个极值、'
+                    + out.counts.inflections + ' 个拐点、' + out.counts.asymptotes + ' 条渐近线，'
+                    + '并带 verify() 复算。\n'
+                    + '运行：python ' + out.filename + '（需 numpy + matplotlib）');
+            } catch (e) {
+                this.showError(e && e.message ? e.message : String(e));
+            }
+        }
+
+        exportManifest() {
+            try {
+                if (!root.MathManifest || !root.MathCodegen) throw new Error('导出模块未加载');
+                const ctx = this._exportContext();
+                const py = root.MathCodegen.buildPython({
+                    expression: ctx.expression,
+                    xMin: ctx.range.xMin, xMax: ctx.range.xMax,
+                    yMin: ctx.range.yMin, yMax: ctx.range.yMax,
+                    facts: ctx.facts
+                });
+                const manifest = root.MathManifest.buildManifest({
+                    expression: ctx.expression,
+                    mode: this.mode,
+                    view: this.view,
+                    window: {
+                        xMin: ctx.range.xMin, xMax: ctx.range.xMax,
+                        yMin: ctx.range.yMin, yMax: ctx.range.yMax
+                    },
+                    facts: ctx.facts,
+                    storyboard: ctx.storyboard,
+                    artifacts: [
+                        { role: 'python', name: py.filename, content: py.code },
+                        { role: 'storyboard', name: 'storyboard.json', content: JSON.stringify(ctx.storyboard, null, 2) }
+                    ]
+                });
+                const fp = root.MathManifest.fingerprint(ctx.expression).split(':')[1] || 'run';
+                this.downloadText('manifest_' + fp + '.json', JSON.stringify(manifest, null, 2), 'application/json');
+                this.addMessage('bot',
+                    '已导出运行清单：' + manifest.result.claims + ' 条结论、'
+                    + manifest.artifacts.length + ' 个产物指纹，算法参数与区间已一并记录。');
+            } catch (e) {
+                this.showError(e && e.message ? e.message : String(e));
+            }
+        }
+
+        /* ---------------- 分享链接（URL 状态） ---------------- */
+
+        _currentRawInput() {
+            if (this.mode === '3d') return val('function-expr-3d');
+            if (this.view === 'parametric') return val('param-x') + '|' + val('param-y');
+            if (this.view === 'polar') return val('polar-r');
+            if (this.view === 'implicit') return val('implicit-expr');
+            return val('function-expr');
+        }
+
+        _applyRawInput(raw) {
+            if (this.mode === '3d') { $('function-expr-3d').value = raw; return; }
+            if (this.view === 'parametric') {
+                const parts = String(raw || '').split('|');
+                $('param-x').value = parts[0] || '';
+                $('param-y').value = parts[1] || '';
+                return;
+            }
+            if (this.view === 'polar') { $('polar-r').value = raw; return; }
+            if (this.view === 'implicit') { $('implicit-expr').value = raw; return; }
+            $('function-expr').value = raw;
+        }
+
+        /** 把当前状态编码成 `#e=...&x=..&y=..&m=..&v=..` */
+        _stateHash() {
+            let range;
+            try { range = readRange(); } catch (e) { range = null; }
+            const p = new URLSearchParams();
+            p.set('e', this._currentRawInput());
+            p.set('m', this.mode);
+            p.set('v', this.view);
+            if (range) {
+                p.set('x', range.xMin + ',' + range.xMax);
+                p.set('y', range.yMin + ',' + range.yMax);
+            }
+            const keys = Object.keys(this.params);
+            if (keys.length) {
+                p.set('p', keys.map((k) => k + ':' + this.params[k]).join(','));
+            }
+            return p.toString();
+        }
+
+        buildShareUrl() {
+            return location.origin + location.pathname + '#' + this._stateHash();
+        }
+
+        /** 从 hash 恢复状态；返回是否成功恢复 */
+        restoreFromUrl() {
+            const hash = String(location.hash || '').replace(/^#/, '');
+            if (!hash) return false;
+            let p;
+            try { p = new URLSearchParams(hash); } catch (e) { return false; }
+            if (!p.has('e')) return false;
+            if (!String(p.get('e') || '').trim()) return false;
+
+            const mode = p.get('m') === '3d' ? '3d' : '2d';
+            const view = ['explicit', 'parametric', 'polar', 'implicit'].indexOf(p.get('v')) >= 0
+                ? p.get('v') : 'explicit';
+            this.mode = mode;
+            this.view = view;
+            this._applyRawInput(p.get('e') || '');
+
+            const xr = String(p.get('x') || '').split(',').map(Number);
+            const yr = String(p.get('y') || '').split(',').map(Number);
+            if (xr.length === 2 && Number.isFinite(xr[0]) && Number.isFinite(xr[1]) && xr[0] < xr[1]) {
+                $('x-min').value = xr[0];
+                $('x-max').value = xr[1];
+            }
+            if (yr.length === 2 && Number.isFinite(yr[0]) && Number.isFinite(yr[1]) && yr[0] < yr[1]) {
+                $('y-min').value = yr[0];
+                $('y-max').value = yr[1];
+            }
+
+            // 参数取值（可选）
+            const pv = String(p.get('p') || '');
+            if (pv) {
+                const restore = {};
+                pv.split(',').forEach((pair) => {
+                    const kv = pair.split(':');
+                    const key = kv[0];
+                    const num = parseFloat(kv[1]);
+                    if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) && Number.isFinite(num)) restore[key] = num;
+                });
+                this.params = restore;
+            }
+            return true;
+        }
+
+        /** 每次成功绘图后同步地址栏（不产生历史记录） */
+        _syncUrl() {
+            try {
+                const next = '#' + this._stateHash();
+                if (location.hash !== next) {
+                    history.replaceState(null, '', location.pathname + location.search + next);
+                }
+            } catch (e) { /* file:// 下可能不支持，忽略 */ }
+        }
+
+        async copyShareLink() {
+            const url = this.buildShareUrl();
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(url);
+                    this.addMessage('bot', '已复制分享链接（打开即是当前函数与区间）：\n' + url);
+                    return;
+                }
+            } catch (e) { /* 非安全上下文会拒绝，落到手动复制 */ }
+            this.addMessage('bot', '分享链接（请手动复制）：\n' + url);
+        }
+
         /* ---------------- 性质报告渲染 ---------------- */
 
         _propRow(k, v) {
@@ -422,11 +723,13 @@
             $('properties-panel').innerHTML = '<p class="empty">' + msg + '</p>';
         }
 
-        renderReport() {
+        renderReport(subtitle) {
             const r = this.report;
             if (!r) return;
             const n = (v, d) => MathCore.fmt(v, d === undefined ? 6 : d);
             const html = [];
+
+            if (subtitle) html.push('<div class="prop-sep">' + subtitle + '</div>');
 
             // 基本信息
             const parityText = { even: '偶函数', odd: '奇函数', none: '非奇非偶' }[r.parity];
@@ -484,6 +787,39 @@
                 + (bounded ? '' : '带 ⚠ 的值域含极点，实际可能无界。') + '</p>');
 
             $('properties-panel').innerHTML = html.join('');
+        }
+
+        /* ---------------- 多函数对比 ---------------- */
+
+        renderCompare(exprs, range) {
+            const panel = $('properties-panel');
+            if (!panel || !MathCore.compareFunctions) return;
+            let cmp;
+            try {
+                cmp = MathCore.compareFunctions(exprs[0], exprs[1], range.xMin, range.xMax);
+            } catch (e) {
+                return;
+            }
+            const n = (v, d) => MathCore.fmt(v, d === undefined ? 5 : d);
+            const rows = [];
+            rows.push('<div class="prop-sep">对比：' + exprs[0] + '　vs　' + exprs[1] + '</div>');
+            rows.push(this._propRow('交点', cmp.intersections.length
+                ? cmp.intersections.slice(0, 8).map((p) => 'x≈' + n(p.x, 5)).join('，')
+                : '区间内无'));
+            const above = cmp.intervals.filter((s) => s.dir > 0);
+            const below = cmp.intervals.filter((s) => s.dir < 0);
+            rows.push(this._propRow('f1 在上方', above.length
+                ? above.slice(0, 3).map((s) => '[' + n(s.from, 3) + ',' + n(s.to, 3) + ']').join(' ') : '无'));
+            rows.push(this._propRow('f2 在上方', below.length
+                ? below.slice(0, 3).map((s) => '[' + n(s.from, 3) + ',' + n(s.to, 3) + ']').join(' ') : '无'));
+            rows.push(this._propRow('最大间距', Number.isFinite(cmp.maxGap.gap)
+                ? '|Δ|≈' + n(Math.abs(cmp.maxGap.gap), 4) + '（x≈' + n(cmp.maxGap.x, 4) + '）' : '—'));
+            rows.push(this._propRow('面积差', '∫(f1−f2) ≈ ' + n(cmp.totalArea, 4)));
+
+            // 放在脚注之前，避免「采样说明」被夹在中间
+            const note = panel.querySelector('.prop-note');
+            if (note) note.insertAdjacentHTML('beforebegin', rows.join(''));
+            else panel.insertAdjacentHTML('beforeend', rows.join(''));
         }
 
         /* ---------------- 数值表与导出 ---------------- */

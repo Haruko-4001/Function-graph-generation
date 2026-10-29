@@ -853,6 +853,108 @@
         return findZeros(diff, a, b).map((x) => ({ x, y: f1(x) }));
     }
 
+    /**
+     * 提取表达式中的自由参数（未知符号）。
+     * 用于「参数滑块」：除自变量与 math 命名空间内的函数/常量外，其余视为可调参数。
+     * @returns {string[]} 排序后的参数名
+     */
+    function freeSymbols(expr, vars) {
+        const allowed = vars || ['x'];
+        const out = [];
+        let node;
+        try {
+            node = math.parse(normalizeExpression(expr, { stripPrefix: false }));
+        } catch (e) {
+            return out;
+        }
+        const reserved = ['pi', 'e', 'i', 'Infinity', 'NaN', 'tau', 'phi', 'E', 'PI'];
+        try {
+            node.traverse(function (n) {
+                if (!n || !n.isSymbolNode) return;
+                const name = n.name;
+                if (allowed.indexOf(name) >= 0) return;
+                if (name in math) return;
+                if (reserved.indexOf(name) >= 0) return;
+                if (out.indexOf(name) < 0) out.push(name);
+            });
+        } catch (e) { /* traverse 失败就当没有参数 */ }
+        return out.sort();
+    }
+
+    /**
+     * 把表达式中的某个符号替换成常数，返回新的表达式字符串。
+     * 用于参数滑块与 3D 切片：替换后再走原有的分析流程，下游无需改动。
+     */
+    function substituteVariable(expr, name, value) {
+        const node = math.parse(normalizeExpression(expr, { stripPrefix: false }));
+        const replaced = node.transform(function (n) {
+            if (n && n.isSymbolNode && n.name === name) {
+                return new math.ConstantNode(value);
+            }
+            return n;
+        });
+        let simplifed = replaced;
+        try { simplifed = math.simplify(replaced); } catch (e) { /* 化简失败用原式 */ }
+        return simplifed.toString();
+    }
+
+    /**
+     * 两个函数的对比分析。
+     * 返回 { intersections, intervals:[{from,to,dir,area}], maxGap, totalArea }
+     * dir = 1 表示 f1 在 f2 上方，-1 表示下方，0 表示重合。
+     */
+    function compareFunctions(expr1, expr2, a, b) {
+        const f1 = makeFunction(expr1, ['x']);
+        const f2 = makeFunction(expr2, ['x']);
+        const diff = function (x) {
+            const v1 = f1(x), v2 = f2(x);
+            return (Number.isFinite(v1) && Number.isFinite(v2)) ? v1 - v2 : NaN;
+        };
+
+        const roots = findZeros(diff, a, b);
+        const cuts = [a].concat(roots.filter((x) => x > a && x < b), [b]);
+
+        const intervals = [];
+        let maxGap = { x: NaN, gap: 0 };
+
+        for (let i = 0; i < cuts.length - 1; i++) {
+            const l = cuts[i], r = cuts[i + 1];
+            if (!(r - l > 1e-9)) continue;
+
+            let sum = 0, count = 0;
+            for (let k = 1; k <= 9; k++) {
+                const x = l + (r - l) * k / 10;
+                const d = diff(x);
+                if (!Number.isFinite(d)) continue;
+                sum += d;
+                count++;
+                if (Math.abs(d) > Math.abs(maxGap.gap)) maxGap = { x: x, gap: d };
+            }
+            if (!count) continue;
+
+            const mean = sum / count;
+            const integ = adaptiveSimpson(diff, l, r, 1e-9, 20);
+            intervals.push({
+                from: l,
+                to: r,
+                dir: mean > 1e-9 ? 1 : (mean < -1e-9 ? -1 : 0),
+                area: Number.isFinite(integ.value) ? integ.value : NaN,
+                converged: integ.converged
+            });
+        }
+
+        const total = intervals.reduce(function (acc, seg) {
+            return Number.isFinite(seg.area) ? acc + seg.area : acc;
+        }, 0);
+
+        return {
+            intersections: roots.map((x) => ({ x: x, y: f1(x), y2: f2(x) })),
+            intervals: intervals,
+            maxGap: maxGap,
+            totalArea: total
+        };
+    }
+
     /** 奇偶性：'even' | 'odd' | 'none' */
     function parity(f, a, b) {
         if (typeof f === 'string') f = makeFunction(f, ['x']);
@@ -1023,6 +1125,9 @@
         symbolicDerivative,
         taylor,
         intersections,
+        freeSymbols,
+        substituteVariable,
+        compareFunctions,
         parity,
         findPeriod,
         analyzeFunction

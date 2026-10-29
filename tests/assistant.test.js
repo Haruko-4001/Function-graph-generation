@@ -208,6 +208,30 @@ test('定义域查询包含极点', () => {
     assert(out.indexOf('未定义点（含极点）') >= 0, '应把极点算进未定义点，实际：' + out);
 });
 
+/* ---------------- 术语解释 ---------------- */
+console.log('\n[术语库]');
+
+test('「什么是拐点」走术语解释，不走求解', () => {
+    const out = newAssistant()._route('什么是拐点');
+    assert(out.indexOf('【拐点】') === 0, '应返回术语卡，实际：' + out.slice(0, 40));
+    assert(out.indexOf('常见误区') >= 0, '应包含常见误区');
+});
+
+test('「零点是什么」也不误入求根分支', () => {
+    const out = newAssistant()._route('零点是什么');
+    assert(out.indexOf('【零点】') === 0, '应返回术语卡，实际：' + out.slice(0, 40));
+});
+
+test('单纯问「零点」仍然是查当前函数', () => {
+    const out = newAssistant({ report: null })._route('零点');
+    assert(out.indexOf('【求根】') === 0, '应走求根而不是术语，实际：' + out.slice(0, 40));
+});
+
+test('最长别名优先：极大值归到极值', () => {
+    const out = newAssistant()._route('什么是极大值');
+    assert(out.indexOf('【极值】') === 0, '应匹配到极值，实际：' + out.slice(0, 30));
+});
+
 /* ---------------- 汇总 ---------------- */
 console.log('\n========================================');
 console.log('通过 ' + passed + ' / ' + (passed + failed));

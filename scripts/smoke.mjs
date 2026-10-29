@@ -1,0 +1,211 @@
+/**
+ * scripts/smoke.mjs
+ * ============================================================
+ * 浏览器冒烟测试：真正把页面打开，检查有没有渲染、有没有报错。
+ *
+ * 单元测试覆盖不到「Plotly 到底画出来没有」「点击后有反应吗」这类问题，
+ * 所以单独留一个端到端脚本。
+ *
+ * 用法：
+ *   npm run build && npm run smoke
+ *   MFV_BROWSER="/path/to/chrome" node scripts/smoke.mjs
+ *   MFV_TARGET=index.html node scripts/smoke.mjs      # 测开发版
+ *
+ * 找不到浏览器时以 0 退出（跳过），不阻塞 CI。
+ * ============================================================
+ */
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const PORT = Number(process.env.MFV_PORT || 9431);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function findBrowser() {
+    if (process.env.MFV_BROWSER && fs.existsSync(process.env.MFV_BROWSER)) return process.env.MFV_BROWSER;
+    const candidates = [
+        'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+        'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+        'C:/Program Files/Google/Chrome/Application/chrome.exe',
+        'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser'
+    ];
+    return candidates.find((p) => fs.existsSync(p)) || null;
+}
+
+const browserPath = findBrowser();
+if (!browserPath) {
+    console.log('· 未找到 Chrome / Edge，跳过浏览器冒烟测试（可用 MFV_BROWSER 指定）');
+    process.exit(0);
+}
+
+const targetFile = process.env.MFV_TARGET
+    ? path.resolve(ROOT, process.env.MFV_TARGET)
+    : path.resolve(ROOT, 'dist/math-function-visualizer.html');
+
+if (!fs.existsSync(targetFile)) {
+    console.error('× 目标文件不存在：' + targetFile + '\n  请先执行 npm run build，或用 MFV_TARGET=index.html');
+    process.exit(1);
+}
+
+const target = pathToFileURL(targetFile).href;
+const profile = path.join(ROOT, '.smoke-profile');
+const browser = spawn(browserPath, [
+    '--headless=new',
+    `--remote-debugging-port=${PORT}`,
+    `--user-data-dir=${profile}`,
+    '--no-first-run', '--disable-gpu', '--enable-unsafe-swiftshader',
+    '--window-size=1440,1000', 'about:blank'
+], { stdio: 'ignore' });
+
+async function waitPort() {
+    for (let i = 0; i < 80; i++) {
+        try {
+            const r = await fetch(`http://127.0.0.1:${PORT}/json/version`);
+            if (r.ok) return r.json();
+        } catch (e) { /* 还没起来 */ }
+        await sleep(400);
+    }
+    throw new Error('浏览器调试端口未就绪');
+}
+
+let ws;
+try {
+    const version = await waitPort();
+    ws = new WebSocket(version.webSocketDebuggerUrl);
+    await new Promise((resolve) => ws.addEventListener('open', resolve));
+} catch (e) {
+    console.error('× ' + e.message);
+    browser.kill();
+    process.exit(1);
+}
+
+let seq = 0;
+const pending = new Map();
+const listeners = [];
+const exceptions = [];
+ws.addEventListener('message', (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.id && pending.has(msg.id)) {
+        const p = pending.get(msg.id);
+        pending.delete(msg.id);
+        msg.error ? p.reject(new Error(JSON.stringify(msg.error))) : p.resolve(msg.result);
+    }
+    listeners.forEach((fn) => fn(msg));
+});
+
+function browserSend(method, params = {}) {
+    const id = ++seq;
+    ws.send(JSON.stringify({ id, method, params }));
+    return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        setTimeout(() => pending.has(id) && (pending.delete(id), reject(new Error('超时：' + method))), 60000);
+    });
+}
+
+const { targetId } = await browserSend('Target.createTarget', { url: 'about:blank' });
+const { sessionId } = await browserSend('Target.attachToTarget', { targetId, flatten: true });
+
+let seq2 = 0;
+const pending2 = new Map();
+listeners.push((m) => {
+    if (m.sessionId !== sessionId) return;
+    if (m.id && pending2.has(m.id)) {
+        const p = pending2.get(m.id);
+        pending2.delete(m.id);
+        m.error ? p.reject(new Error(JSON.stringify(m.error))) : p.resolve(m.result);
+    }
+    if (m.method === 'Runtime.exceptionThrown') {
+        exceptions.push(m.params.exceptionDetails?.exception?.description || m.params.exceptionDetails?.text);
+    }
+});
+
+function send(method, params = {}) {
+    const id = ++seq2 + 100000;
+    ws.send(JSON.stringify({ id, method, params, sessionId }));
+    return new Promise((resolve, reject) => {
+        pending2.set(id, { resolve, reject });
+        setTimeout(() => pending2.has(id) && (pending2.delete(id), reject(new Error('超时：' + method))), 60000);
+    });
+}
+
+const evaluate = async (expr) => {
+    const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
+    if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
+    return r.result.value;
+};
+
+const checks = [];
+function check(name, ok, detail) {
+    checks.push({ name, ok, detail });
+    console.log((ok ? '  ✓ ' : '  ✗ ') + name + (detail && !ok ? '\n      ' + detail : ''));
+}
+
+try {
+    await send('Runtime.enable');
+    await send('Page.enable');
+    await send('Page.navigate', { url: target });
+    await sleep(16000);
+
+    const boot = await evaluate(`({
+        title: document.title,
+        MathCore: typeof window.MathCore,
+        Facts: typeof window.MathFacts,
+        Player: typeof window.MathStoryboardPlayer,
+        Codegen: typeof window.MathCodegen,
+        props: document.querySelectorAll('#properties-panel .prop').length,
+        svg: document.querySelectorAll('#graph-container svg').length
+    })`);
+
+    check('页面标题正确', /数学函数可视化/.test(boot.title), boot.title);
+    check('核心模块已加载', boot.MathCore === 'object' && boot.Facts === 'object'
+        && boot.Player === 'function' && boot.Codegen === 'object',
+        JSON.stringify(boot));
+    check('图形已渲染', boot.svg > 0, 'svg=' + boot.svg);
+    check('性质报告已生成', boot.props >= 10, 'props=' + boot.props);
+
+    // 切换到一个有极值与零点的函数，验证重绘链路
+    const rerender = await evaluate(`(async () => {
+        document.getElementById('function-expr').value = 'x^2 - 4';
+        document.getElementById('plot-btn').click();
+        await new Promise(r => setTimeout(r, 3000));
+        return {
+            props: document.querySelectorAll('#properties-panel .prop').length,
+            err: document.getElementById('graph-error').textContent
+        };
+    })()`);
+    check('切换函数后重绘成功', rerender.props >= 10 && !rerender.err, JSON.stringify(rerender));
+
+    // 分步讲解
+    const story = await evaluate(`(async () => {
+        document.getElementById('story-btn').click();
+        await new Promise(r => setTimeout(r, 6500));
+        const cap = document.getElementById('story-caption');
+        return {
+            caption: cap.textContent.trim(),
+            shown: cap.classList.contains('show'),
+            facts: document.getElementById('story-facts').textContent.trim()
+        };
+    })()`);
+    check('分步讲解能播放', story.shown && story.caption.length > 0, JSON.stringify(story));
+    check('数值自检有输出', /数值自检/.test(story.facts), story.facts);
+
+    check('运行期无异常', exceptions.length === 0, exceptions.slice(0, 3).join('\n'));
+
+    const failed = checks.filter((c) => !c.ok);
+    console.log('\n' + (failed.length ? '冒烟测试失败：' + failed.length + ' 项' : '冒烟测试通过：' + checks.length + ' 项'));
+    browser.kill();
+    try { fs.rmSync(profile, { recursive: true, force: true }); } catch (e) { /* ignore */ }
+    process.exit(failed.length ? 1 : 0);
+} catch (e) {
+    console.error('× 冒烟测试出错：' + e.message);
+    browser.kill();
+    process.exit(1);
+}

@@ -316,6 +316,41 @@ test('stripPrefix:false 仍然规范化全角符号', () => {
     assert(s === 'x^2+y^2=9', '全角规范化失败: ' + s);
 });
 
+/* ---------------- 参数代入 / 多函数对比 ---------------- */
+console.log('\n[参数、切片与对比]');
+
+test('识别自由参数', () => {
+    assert(JSON.stringify(MathCore.freeSymbols('a*x^2 + b*x + c')) === '["a","b","c"]');
+    assert(JSON.stringify(MathCore.freeSymbols('sin(w*x)')) === '["w"]');
+    assert(MathCore.freeSymbols('2*x + 1').length === 0, '无参数时不应识别出参数');
+});
+
+test('符号代入并化简', () => {
+    const s1 = MathCore.substituteVariable('x^2 + y^2', 'y', 2);
+    assert(s1.replace(/\s/g, '') === 'x^2+4', '代入结果不对: ' + s1);
+    const s2 = MathCore.substituteVariable('a*sin(x)', 'a', 3);
+    assert(s2.replace(/\s/g, '') === '3*sin(x)', '代入结果不对: ' + s2);
+});
+
+test('两函数对比：交点、上下关系与面积差', () => {
+    const r = MathCore.compareFunctions('x^2', '2*x', -10, 10);
+    assert(r.intersections.length === 2, '应有 2 个交点');
+    near(r.intersections[0].x, 0, 1e-7);
+    near(r.intersections[1].x, 2, 1e-7);
+    // ∫(x²-2x) 在 [-10,10] 上 = 2000/3
+    near(r.totalArea, 2000 / 3, 1e-3);
+    // 中间那一段 0~2 上 2x 在上方
+    const middle = r.intervals.find((s) => s.from < 0.1 && s.to > 1.9);
+    assert(middle && middle.dir === -1, '0~2 区间应判为 f2 在上方');
+});
+
+test('对比：平行无交点时给出单区间', () => {
+    const r = MathCore.compareFunctions('x^2', 'x^2 + 1', -5, 5);
+    assert(r.intersections.length === 0);
+    assert(r.intervals.length === 1 && r.intervals[0].dir === -1);
+    near(r.totalArea, -10, 1e-6);
+});
+
 /* ---------------- 汇总 ---------------- */
 console.log('\n========================================');
 console.log('通过 ' + passed + ' / ' + (passed + failed));

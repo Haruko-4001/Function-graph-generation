@@ -7,3 +7,5 @@ Thumbs.db
 coverage/
 .vscode/
 .idea/
+.smoke-profile/
+.tmp_gen/

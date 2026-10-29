@@ -157,6 +157,23 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 .story-facts .ok { color: #50fa7b; }
 .story-facts .bad { color: #ff6b6b; }
 
+/* 参数滑块 */
+.param-sliders:not(:empty) { margin-top: 8px; }
+.param-row {
+    display: grid; grid-template-columns: 92px 1fr;
+    align-items: center; gap: 10px; margin: 5px 0;
+}
+.param-row .pk { font-size: 12px; opacity: .85; font-variant-numeric: tabular-nums; }
+.param-row .pk b { color: var(--accent); }
+.param-row input[type="range"] { width: 100%; accent-color: #64ffda; }
+
+/* 多函数对比分隔 */
+.prop-sep {
+    margin: 14px 0 4px; padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, .14);
+    font-size: 12px; letter-spacing: .02em; color: var(--accent);
+}
+
 /* ---------- 数值表 ---------- */
 
 .table-wrap { max-height: 220px; overflow: auto; border-radius: 8px; }

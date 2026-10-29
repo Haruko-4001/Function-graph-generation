@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数学函数可视化与性质分析工具 v2.2</title>
+    <title>数学函数可视化与性质分析工具 v3.0</title>
     <meta name="description" content="开源数学函数可视化工具：2D/3D 绘图、零点/极值/单调性/凹凸性/渐近线分析、定积分、极限、泰勒展开与智能求解助手">
 
     <!-- 库加载器：多 CDN 回退 -->
@@ -58,6 +58,10 @@
                     'js/facts.js',
                     'js/storyboard.js',
                     'js/player.js',
+                    'js/codecheck.js',
+                    'js/codegen.js',
+                    'js/manifest.js',
+                    'js/glossary.js',
                     'js/assistant.js',
                     'js/visualizer.js',
                     'js/ui.js',
@@ -153,6 +157,7 @@
                         <label for="function-expr">y = f(x)，多个函数用 ; 分隔（可求交点）</label>
                         <input type="text" id="function-expr" value="sin(x)" placeholder="例如 sin(x) + x^2/4 ; x/2" spellcheck="false">
                     </div>
+                    <div id="param-sliders" class="param-sliders"></div>
                 </div>
 
                 <div id="panel-parametric" style="display:none;">
@@ -184,6 +189,10 @@
                     <div class="field">
                         <label for="function-expr-3d">z = f(x, y)</label>
                         <input type="text" id="function-expr-3d" value="sin(sqrt(x^2 + y^2))" spellcheck="false">
+                    </div>
+                    <div class="field">
+                        <label for="slice-pos">切片：固定 y = （留空则不做切片分析）</label>
+                        <input type="text" id="slice-pos" value="" placeholder="例如 1.5，会在曲面上高亮该切片并分析 f(x, 1.5)" spellcheck="false">
                     </div>
                 </div>
 
@@ -245,6 +254,19 @@
                 </p>
                 <div class="story-facts" id="story-facts"></div>
             </div>
+
+            <div class="panel">
+                <h2>导出与分享</h2>
+                <div class="btn-row" style="margin:0 0 10px; flex-wrap:wrap;">
+                    <button class="btn ghost" id="py-btn">导出 Python</button>
+                    <button class="btn ghost" id="manifest-btn">运行清单</button>
+                    <button class="btn ghost" id="share-btn">复制链接</button>
+                </div>
+                <p class="story-hint">
+                    Python 脚本自带 f(x)、标注与 verify() 复算，只依赖 numpy + matplotlib；
+                    运行清单记录输入、算法参数与每个文件的指纹。链接会把当前函数与区间编码进地址栏。
+                </p>
+            </div>
         </div>
 
         <!-- 右侧：图像 + 数据 + 助手 -->
@@ -281,6 +303,7 @@
                     <button class="quick-btn" data-question="渐近线">渐近线</button>
                     <button class="quick-btn" data-question="单调性">单调性</button>
                     <button class="quick-btn" data-question="凹凸性">凹凸性</button>
+                    <button class="quick-btn" data-question="什么是拐点">什么是拐点</button>
                 </div>
                 <div class="chat-box" id="chat-messages"></div>
                 <div class="chat-input-row">

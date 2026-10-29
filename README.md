@@ -1,4 +1,4 @@
-# 数学函数可视化与性质分析工具（Math Function Visualizer v2.2）
+# 数学函数可视化与性质分析工具（Math Function Visualizer v3.0）
 
 一个开箱即用的**纯前端**数学函数研究工具：不只是画图，还能对函数做**系统性的性质分析**与**带步骤的数值求解**。适合教学演示、作业验证与日常数学研究。
 
@@ -49,6 +49,30 @@
 | Storyboard | `js/storyboard.js` | 断言集 → 分镜（动词白名单 + 5 条契约校验） |
 | Player | `js/player.js` | 分镜 → Plotly 逐帧渲染 |
 
+### 导出与分享（v3.0 新增）
+
+| 按钮 | 产出 | 说明 |
+|---|---|---|
+| 导出 Python | `plot_xxx.py` | 只依赖 numpy + matplotlib；含 f(x)、标注、区间常量，以及 `verify()` 逐条复算结论 |
+| 运行清单 | `manifest_xxx.json` | 输入、算法参数、结论统计、每个产物的指纹（FNV-1a），可追溯 |
+| 复制链接 | URL | 把表达式、区间、模式、参数值编码进 `#`，打开即是同一个视图 |
+
+导出的脚本会先过一道**静态检查**（导入白名单、拒绝 `eval/exec/open/os/subprocess`、括号配平、main 保护），
+不通过就不允许下载。脚本导出后可在本机直接运行：
+
+```bash
+pip install numpy matplotlib
+python plot_xp2_4.py      # 出图 + 打印每条结论的残差
+```
+
+### 探索与对比（v3.0 新增）
+
+- **参数滑块**：表达式里出现 `a`、`b`、`w` 这类自由符号时，自动生成滑块并实时重绘
+  （输入 `a*sin(x)` 试试）
+- **多函数对比**：用 `;` 分隔两个函数后，报告会追加对比块——交点、谁在上方、最大间距、面积差 `∫(f1−f2)`
+- **3D 切片分析**：3D 模式下填「切片 y = c」，曲面会高亮该切面，并对 `f(x, c)` 做完整的一维性质分析
+- **术语库**：问「什么是拐点」「渐近线是什么」，助手会给出定义、本工具的计算方式与常见误区
+
 ### 智能助手（中文自然语言，附求解步骤）
 ```
 y = x^2 - 4          → 直接绘图
@@ -85,6 +109,16 @@ index.html
 npx serve .
 # 或 python -m http.server 8000
 ```
+
+常用脚本：
+
+| 命令 | 作用 |
+|---|---|
+| `npm test` | 111 个单元测试（含真跑导出的 Python） |
+| `npm run build` / `build:offline` | 单文件版 / 离线版 |
+| `npm run smoke` | 浏览器端到端冒烟（自动找 Chrome/Edge） |
+| `npm run mcp` | 启动 MCP 服务器（stdio） |
+| `npm run mcp:smoke` | MCP 协议冒烟 |
 
 > 依赖 Plotly.js 与 Math.js，默认从公共 CDN 加载（含多 CDN 回退），需联网。
 
@@ -134,16 +168,28 @@ math_function2.0/
 │   ├── facts.js        # 数值事实层：带残差的断言集（03_facts）
 │   ├── storyboard.js   # 分镜层：动词表 + 契约校验（04_storyboard）
 │   ├── player.js       # 播放器：分镜 → Plotly 逐帧渲染
+│   ├── codecheck.js    # 生成代码的静态检查（导入白名单/危险调用）
+│   ├── codegen.js      # Python 脚本生成
+│   ├── manifest.js     # 运行清单与内容指纹
+│   ├── glossary.js     # 术语库（定义/算法/常见误区）
 │   ├── visualizer.js   # Plotly 绘图引擎（分块异步计算）
 │   ├── assistant.js    # 自然语言助手（意图识别 + 求解步骤）
-│   ├── ui.js           # 应用控制器（状态/校验/报告/导出）
+│   ├── ui.js           # 应用控制器（状态/校验/报告/导出/分享）
 │   └── main.js         # 启动引导
 ├── tests/
-│   ├── math-core.test.js   # 核心算法单元测试（40 例）
-│   ├── assistant.test.js   # 助手意图与积分限解析（24 例）
-│   └── storyboard.test.js  # 数值自检与分镜契约（19 例）
+│   ├── math-core.test.js   # 核心算法（44 例）
+│   ├── assistant.test.js   # 助手意图、积分限与术语（28 例）
+│   ├── storyboard.test.js  # 数值自检与分镜契约（19 例）
+│   └── export.test.js      # 代码生成/静态检查/清单，含真跑 Python（20 例）
+├── mcp/
+│   └── server.mjs      # MCP 服务器（stdio，4 个工具）
+├── scripts/
+│   ├── smoke.mjs       # 浏览器端到端冒烟
+│   └── mcp-smoke.mjs   # MCP 协议冒烟
 ├── docs/
 │   └── OPTIMIZATION.md # 架构优化方案（参考 Math-To-Manim）
+├── .github/workflows/
+│   └── ci.yml          # Node 18/20/22 矩阵测试 + 打包
 ├── examples/
 │   └── examples.md     # 推荐示例函数集
 ├── build.js            # 单文件打包脚本（--offline 可内联第三方库）
@@ -184,13 +230,27 @@ math_function2.0/
 
 ```bash
 npm install   # 仅需 mathjs（测试用）
-npm test      # 83 个用例：math-core 40 + assistant 24 + storyboard 19
+npm test      # 111 个用例：math-core 44 + assistant 28 + storyboard 19 + export 20
+npm run smoke # 浏览器端到端（自动找本机 Chrome/Edge，找不到则跳过）
 ```
 
 覆盖：表达式规范化（含 `stripPrefix`）、零点（含切触）、Brent、极值、单调性、拐点
 （含「极点不得被当成拐点」）、Simpson 积分、极限（含 ∞ 与方向判定）、符号求导、泰勒系数、
 垂直/水平/斜渐近线、值域有界性标记、未定义点、交点、奇偶性、周期、综合分析、
-积分限解析与意图路由、数值断言残差、分镜动词白名单与五条契约。
+积分限解析与意图路由、术语匹配优先级、数值断言残差、分镜动词白名单与五条契约、
+表达式→Python 翻译、生成代码静态检查、运行清单指纹。
+
+`export.test.js` 会**真的用 Python 跑一遍生成的脚本**（需要 numpy + matplotlib）；
+本机没有 Python 时自动跳过该组用例，不会误报失败。
+
+## 🔌 MCP
+
+```bash
+npm run mcp        # stdio JSON-RPC，供支持 MCP 的智能体调用
+```
+
+对外提供 4 个工具：`analyze_function`（性质 + 逐条残差）、`build_storyboard`（分镜 JSON）、
+`export_python`（可运行脚本）、`export_manifest`（运行清单）。协议冒烟：`npm run mcp:smoke`。
 
 ## 🛠 技术栈
 
@@ -206,7 +266,7 @@ npm test      # 83 个用例：math-core 40 + assistant 24 + storyboard 19
 - [ ] 常微分方程数值解（Runge-Kutta 斜率场）
 - [ ] 级数求和与收敛性判定
 - [ ] 符号不定积分（接入计算机代数系统）
-- [ ] 函数图像动画与参数滑块
+- [ ] 中英双语界面（i18n）
 - [ ] 自适应采样（按曲率动态加密，缓解高频振荡漏检）
 
 ## 📄 许可证

@@ -388,7 +388,7 @@
 
         /* ---------------- 3D 曲面 z = f(x,y) ---------------- */
 
-        async plotSurface(expr, xMin, xMax, yMin, yMax) {
+        async plotSurface(expr, xMin, xMax, yMin, yMax, opts) {
             const rid = this._begin();
             const f = MathCore.makeFunction(expr, ['x', 'y']);
             const n = 80;
@@ -414,6 +414,25 @@
                 },
                 name: 'z = ' + expr
             }];
+
+            // 可选：在曲面上高亮一条切片，配合一维性质分析
+            if (opts && opts.sliceY !== undefined && opts.sliceY !== null) {
+                const cy = opts.sliceY;
+                const sx = MathCore.linspace(xMin, xMax, 240);
+                const sz = sx.map(function (x) {
+                    const z = f(x, cy);
+                    return (Number.isFinite(z) && Math.abs(z) < 1e6) ? z : null;
+                });
+                traces.push({
+                    x: sx,
+                    y: sx.map(function () { return cy; }),
+                    z: sz,
+                    type: 'scatter3d',
+                    mode: 'lines',
+                    line: { color: '#ffb86c', width: 6 },
+                    name: '切片 y = ' + MathCore.fmt(cy, 4)
+                });
+            }
 
             const layout = this._baseLayout('z = ' + expr);
             layout.scene = {
