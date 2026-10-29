@@ -19,7 +19,7 @@
     'use strict';
 
     /** 与 package.json 的 version 保持一致（有测试兜底） */
-    const APP_VERSION = '3.0.0';
+    const APP_VERSION = '3.1.0';
     const SCHEMA = 'mfv/manifest@1';
 
     /** 递归按 key 排序，保证同一份数据序列化结果稳定 */

@@ -337,7 +337,7 @@
             return segments;
         }
 
-        async plotImplicit(expr, xMin, xMax, yMin, yMax) {
+        async plotImplicit(expr, xMin, xMax, yMin, yMax, opts) {
             const rid = this._begin();
             // 允许用户输入 "x^2 + y^2 = 9" 形式，转换为 f(x,y) = 0
             let body = expr;
@@ -376,7 +376,41 @@
                 name: expr
             }];
 
-            const layout = this._baseLayout('隐函数 ' + expr + ' = 0');
+            // 圆锥曲线的焦点/顶点/中心等标记
+            if (opts && Array.isArray(opts.markers) && opts.markers.length) {
+                const kinds = { focus: '#ffb86c', vertex: '#8be9fd', center: '#f1fa8c' };
+                const groups = {};
+                opts.markers.forEach(function (m) {
+                    const kind = m.kind || 'vertex';
+                    if (!groups[kind]) groups[kind] = [];
+                    groups[kind].push(m);
+                });
+                Object.keys(groups).forEach(function (kind) {
+                    const list = groups[kind];
+                    traces.push({
+                        x: list.map(function (m) { return m.x; }),
+                        y: list.map(function (m) { return m.y; }),
+                        text: list.map(function (m) { return m.label || ''; }),
+                        textposition: kind === 'center' ? 'bottom center' : 'top center',
+                        type: 'scatter',
+                        mode: 'markers+text',
+                        marker: { color: kinds[kind] || '#ffffff', size: 9, line: { color: 'rgba(7,13,23,.8)', width: 1 } },
+                        textfont: { size: 11, color: kinds[kind] || '#ffffff' },
+                        name: kind === 'focus' ? '焦点' : (kind === 'center' ? '中心' : '顶点'),
+                        hoverinfo: 'skip'
+                    });
+                });
+            }
+
+            const layout = this._baseLayout((opts && opts.title) || ('隐函数 ' + expr + ' = 0'));
+            // 标题靠左、字号收敛，避免与图例/工具栏在顶部打架
+            layout.title = {
+                text: (opts && opts.title) || ('隐函数 ' + expr + ' = 0'),
+                font: { color: '#b5c4d7', size: 13 },
+                x: 0.012, xanchor: 'left', y: 0.985, yanchor: 'top'
+            };
+            layout.showlegend = false;
+            layout.margin.t = 46;
             layout.xaxis = this._axis2D('x', [xMin, xMax], 'rgba(255,255,255,.12)');
             layout.yaxis = this._axis2D('y', [yMin, yMax], 'rgba(255,255,255,.12)');
             layout.yaxis.scaleanchor = 'x';
@@ -445,6 +479,14 @@
             this.lastSamples = { kind: 'surface', x: xs, y: ys, z: zs, expression: expr };
             await this._render(traces, layout, { mode: 'surface', expression: expr });
             return true;
+        }
+
+        /** 在现有图上叠加一条临时曲线（切线、辅助线等） */
+        addTrace(trace) {
+            if (typeof Plotly === 'undefined' || !trace) return;
+            try {
+                Plotly.addTraces(this.containerId, trace);
+            } catch (e) { /* 容器未初始化时忽略 */ }
         }
 
         /** 清空画布 */

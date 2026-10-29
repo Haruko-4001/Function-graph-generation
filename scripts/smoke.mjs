@@ -197,6 +197,31 @@ try {
     check('分步讲解能播放', story.shown && story.caption.length > 0, JSON.stringify(story));
     check('数值自检有输出', /数值自检/.test(story.facts), story.facts);
 
+    const conic = await evaluate(`(async () => {
+        document.querySelector('.view-btn[data-view="conic"]').click();
+        await new Promise(r => setTimeout(r, 600));
+        document.getElementById('conic-expr').value = 'x^2/4 + y^2/9 = 1';
+        document.getElementById('plot-btn').click();
+        await new Promise(r => setTimeout(r, 3500));
+        return {
+            text: document.getElementById('properties-panel').innerText,
+            err: document.getElementById('graph-error').textContent
+        };
+    })()`);
+    check('圆锥曲线模式可用', /椭圆/.test(conic.text) && !conic.err, JSON.stringify(conic).slice(0, 200));
+
+    const learn = await evaluate(`(async () => {
+        document.getElementById('learn-btn').click();
+        await new Promise(r => setTimeout(r, 600));
+        const groups = document.querySelectorAll('.learn-group').length;
+        const title = (document.querySelector('.learn-card h3') || {}).textContent || '';
+        document.getElementById('learn-close').click();
+        await new Promise(r => setTimeout(r, 260));
+        return { groups, title, hidden: document.getElementById('learn-overlay').hidden };
+    })()`);
+    check('知识地图可打开', learn.groups === 8 && learn.title.length > 0 && learn.hidden,
+        JSON.stringify(learn));
+
     check('运行期无异常', exceptions.length === 0, exceptions.slice(0, 3).join('\n'));
 
     const failed = checks.filter((c) => !c.ok);

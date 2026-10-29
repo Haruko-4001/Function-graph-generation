@@ -26,9 +26,12 @@ const outName = outIdx >= 0 && args[outIdx + 1] ? args[outIdx + 1] : null;
 
 const APP_FILES = [
     'js/math-core.js',
+    'js/curriculum-data.js',
     'js/facts.js',
     'js/storyboard.js',
     'js/player.js',
+    'js/conic.js',
+    'js/calculus.js',
     'js/codecheck.js',
     'js/codegen.js',
     'js/manifest.js',
@@ -37,6 +40,7 @@ const APP_FILES = [
     'js/motion.js',
     'js/visualizer.js',
     'js/ui.js',
+    'js/learning.js',
     'js/main.js'
 ];
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#070d17">
-    <title>数学函数可视化与性质分析工具 v3.0</title>
+    <title>数学函数可视化与性质分析工具 v3.1</title>
     <meta name="description" content="开源数学函数可视化工具：2D/3D 绘图、零点/极值/单调性/凹凸性/渐近线分析、定积分、极限、泰勒展开与智能求解助手">
 
     <!-- 库加载器：多 CDN 回退 -->
@@ -56,9 +56,12 @@
                 }
                 const files = [
                     'js/math-core.js',
+                    'js/curriculum-data.js',
                     'js/facts.js',
                     'js/storyboard.js',
                     'js/player.js',
+                    'js/conic.js',
+                    'js/calculus.js',
                     'js/codecheck.js',
                     'js/codegen.js',
                     'js/manifest.js',
@@ -67,6 +70,7 @@
                     'js/motion.js',
                     'js/visualizer.js',
                     'js/ui.js',
+                    'js/learning.js',
                     'js/main.js'
                 ];
                 return files.reduce(function (chain, src) {
@@ -143,7 +147,7 @@
             </svg>
         </div>
         <div class="brand-copy">
-            <div class="eyebrow">Function Lab · v3.0</div>
+            <div class="eyebrow">Function Lab · v3.1</div>
             <h1>数学函数可视化与性质分析工具</h1>
             <p class="subtitle">从一条曲线出发，读懂函数的形状、结构与变化。2D / 3D 绘图 · 性质分析 · 分步讲解 · 脚本导出</p>
         </div>
@@ -153,9 +157,12 @@
         </div>
     </header>
 
-    <div class="tabs" role="tablist" aria-label="绘图维度">
-        <button class="tab active" data-mode="2d" role="tab" aria-selected="true">2D 图像</button>
-        <button class="tab" data-mode="3d" role="tab" aria-selected="false">3D 曲面</button>
+    <div class="mode-bar">
+        <div class="tabs" role="tablist" aria-label="绘图维度">
+            <button class="tab active" data-mode="2d" role="tab" aria-selected="true">2D 图像</button>
+            <button class="tab" data-mode="3d" role="tab" aria-selected="false">3D 曲面</button>
+        </div>
+        <button class="btn ghost learn-entry" id="learn-btn" type="button" aria-haspopup="dialog">知识地图</button>
     </div>
 
     <div class="layout">
@@ -169,6 +176,7 @@
                     <button class="view-btn" data-view="parametric" role="tab" aria-selected="false" title="x(t), y(t)">参数方程</button>
                     <button class="view-btn" data-view="polar" role="tab" aria-selected="false" title="r = r(θ)">极坐标</button>
                     <button class="view-btn" data-view="implicit" role="tab" aria-selected="false" title="f(x,y) = 0">隐函数</button>
+                    <button class="view-btn" data-view="conic" role="tab" aria-selected="false" title="椭圆 / 双曲线 / 抛物线">圆锥曲线</button>
                 </div>
 
                 <div id="panel-explicit">
@@ -202,6 +210,21 @@
                         <label for="implicit-expr">f(x, y) = 0（也支持 x^2 + y^2 = 9 写法）</label>
                         <input type="text" id="implicit-expr" value="x^2 + y^2 - 9" spellcheck="false">
                     </div>
+                </div>
+
+                <div id="panel-conic" style="display:none;">
+                    <div class="field">
+                        <label for="conic-expr">二次曲线方程（椭圆 / 双曲线 / 抛物线 / 圆）</label>
+                        <input type="text" id="conic-expr" value="x^2/4 + y^2/9 = 1" spellcheck="false" aria-label="圆锥曲线方程">
+                    </div>
+                    <p class="story-hint">支持标准式与一般式，例如 x^2/4 - y^2/9 = 1、y^2 = 4*x。</p>
+                    <div class="conic-tangent">
+                        <label for="conic-px">切点</label>
+                        <input type="text" id="conic-px" value="2" aria-label="切点 x 坐标">
+                        <input type="text" id="conic-py" value="0" aria-label="切点 y 坐标">
+                        <button class="btn ghost" id="conic-tangent-btn" type="button">求切线</button>
+                    </div>
+                    <div id="conic-tangent-result" class="story-hint"></div>
                 </div>
 
                 <div id="panel-3d" style="display:none;">
@@ -259,6 +282,17 @@
             <div class="panel">
                 <h2>性质分析</h2>
                 <div id="properties-panel"><p class="empty">绘制显函数后在此显示分析报告。</p></div>
+            </div>
+
+            <div class="panel" id="deriv-panel">
+                <h2>导数工具</h2>
+                <div class="deriv-controls">
+                    <label for="tangent-x">切点 x₀</label>
+                    <input type="text" id="tangent-x" value="1" aria-label="切点横坐标">
+                    <button class="btn ghost" id="tangent-btn" type="button">切线 / 法线</button>
+                    <button class="btn ghost" id="extrema-btn" type="button">闭区间最值</button>
+                </div>
+                <div id="deriv-result" class="deriv-result empty">在显函数模式下，输入切点即可求切线、法线与区间最值。</div>
             </div>
 
             <div class="panel">
@@ -339,6 +373,32 @@
     </div>
 
     <footer>开源项目 · 基于 Plotly.js 与 Math.js 构建 · MIT License</footer>
+</div>
+
+<div class="learn-overlay" id="learn-overlay" hidden>
+    <div class="learn-backdrop" data-learn-close></div>
+    <section class="learn-shell" role="dialog" aria-modal="true" aria-labelledby="learn-title">
+        <header class="learn-head">
+            <div>
+                <div class="eyebrow">Learning Map</div>
+                <h2 id="learn-title">函数知识地图</h2>
+                <p>8 个模块 · 62 个知识节点 · 60 条结论 · 90 个题型标签</p>
+            </div>
+            <div class="learn-head-actions">
+                <button class="learn-close" id="learn-close" type="button" aria-label="关闭知识地图">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+        </header>
+        <div class="learn-body">
+            <aside class="learn-side">
+                <label class="learn-search-label" for="learn-search">搜索知识点或结论</label>
+                <input type="search" id="learn-search" placeholder="例如：极值点偏移、焦点三角形、e²−1" autocomplete="off">
+                <div class="learn-tree" id="learn-tree"></div>
+            </aside>
+            <article class="learn-card" id="learn-card"></article>
+        </div>
+    </section>
 </div>
 
 <!-- 应用脚本由头部加载器在第三方库就绪后动态注入，保证加载顺序 -->

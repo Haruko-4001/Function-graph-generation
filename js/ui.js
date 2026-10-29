@@ -39,6 +39,7 @@
                 : null;
             this.story = null;              // { facts, storyboard }
             this.params = {};               // 参数滑块：{ a: 1, b: 2 }
+            this.conic = null;              // 最近一次圆锥曲线分析结果
             this.assistant = null;
             this.report = null;
             this.debounceTimer = null;
@@ -105,6 +106,9 @@
                 else if (t.id === 'py-btn') this.exportPython();
                 else if (t.id === 'manifest-btn') this.exportManifest();
                 else if (t.id === 'share-btn') this.copyShareLink();
+                else if (t.id === 'tangent-btn') this.showTangent();
+                else if (t.id === 'extrema-btn') this.showExtrema();
+                else if (t.id === 'conic-tangent-btn') this.showConicTangent();
             });
 
             const autoHandler = this.debounce(() => { if (this.autoPlot) this.plot(); }, 800);
@@ -182,8 +186,15 @@
             $('panel-parametric').style.display = is2D && this.view === 'parametric' ? 'block' : 'none';
             $('panel-polar').style.display = is2D && this.view === 'polar' ? 'block' : 'none';
             $('panel-implicit').style.display = is2D && this.view === 'implicit' ? 'block' : 'none';
+            $('panel-conic').style.display = is2D && this.view === 'conic' ? 'block' : 'none';
 
-            const rangeLabel = { explicit: ['x 范围', 'y 范围'], parametric: ['t 范围', '显示范围 x/y'], polar: ['θ 范围', '显示范围'], implicit: ['x 范围', 'y 范围'] };
+            const rangeLabel = {
+                explicit: ['x 范围', 'y 范围'],
+                parametric: ['t 范围', '显示范围 x/y'],
+                polar: ['θ 范围', '显示范围'],
+                implicit: ['x 范围', 'y 范围'],
+                conic: ['x 范围', 'y 范围']
+            };
             const labels = this.mode === '3d' ? ['x 范围', 'y 范围'] : (rangeLabel[this.view] || ['x 范围', 'y 范围']);
             $('range-label-x').textContent = labels[0];
             $('range-label-y').textContent = labels[1];
@@ -240,6 +251,11 @@
                 case 'implicit': {
                     // 隐函数用等号表达，故关闭「y= 前缀剥离」，只做全角/π 等规范化
                     const raw = val('implicit-expr');
+                    if (!raw.trim()) return [];
+                    return [MathCore.normalizeExpression(raw, { stripPrefix: false })].filter(Boolean);
+                }
+                case 'conic': {
+                    const raw = val('conic-expr');
                     if (!raw.trim()) return [];
                     return [MathCore.normalizeExpression(raw, { stripPrefix: false })].filter(Boolean);
                 }
@@ -307,7 +323,8 @@
         }
 
         validateAll() {
-            const exprs = this.currentExpressions();            if (!exprs.length) throw new Error('请输入函数表达式');
+            const exprs = this.currentExpressions();
+            if (!exprs.length) throw new Error('请输入函数表达式');
 
             if (this.mode === '3d') {
                 const r = MathCore.validateExpression(exprs[0], ['x', 'y']);
@@ -337,6 +354,13 @@
                     const s = exprs[0];
                     const eq = s.indexOf('=');
                     const body = eq > 0 ? '(' + s.slice(0, eq) + ')-(' + s.slice(eq + 1) + ')' : s;
+                    const r = MathCore.validateExpression(body, ['x', 'y']);
+                    if (!r.ok) throw new Error(r.error);
+                    break;
+                }
+                case 'conic': {
+                    if (!root.MathConic) throw new Error('圆锥曲线模块未加载');
+                    const body = root.MathConic.toBody(exprs[0]);
                     const r = MathCore.validateExpression(body, ['x', 'y']);
                     if (!r.ok) throw new Error(r.error);
                     break;
@@ -408,6 +432,18 @@
                     ok = segCount !== null;
                     this.report = null;
                     if (ok) this.renderReportUnavailable('隐函数模式：共提取 ' + segCount + ' 段等值线');
+                } else if (this.view === 'conic') {
+                    const info = root.MathConic.analyze(exprs[0]);
+                    const segCount = await this.plotter.plotImplicit(exprs[0], range.xMin, range.xMax, range.yMin, range.yMax, {
+                        markers: info.markers,
+                        title: info.typeLabel + ' · ' + info.equation
+                    });
+                    ok = segCount !== null;
+                    this.report = null;
+                    if (ok) {
+                        this.conic = info;
+                        this.renderConic(info, segCount);
+                    }
                 }
 
                 // ok === null/false 表示本次结果已被更新的请求取代，不再覆盖后画的图
@@ -620,6 +656,7 @@
             if (this.view === 'parametric') return val('param-x') + '|' + val('param-y');
             if (this.view === 'polar') return val('polar-r');
             if (this.view === 'implicit') return val('implicit-expr');
+            if (this.view === 'conic') return val('conic-expr');
             return val('function-expr');
         }
 
@@ -633,6 +670,7 @@
             }
             if (this.view === 'polar') { $('polar-r').value = raw; return; }
             if (this.view === 'implicit') { $('implicit-expr').value = raw; return; }
+            if (this.view === 'conic') { $('conic-expr').value = raw; return; }
             $('function-expr').value = raw;
         }
 
@@ -669,7 +707,7 @@
             if (!String(p.get('e') || '').trim()) return false;
 
             const mode = p.get('m') === '3d' ? '3d' : '2d';
-            const view = ['explicit', 'parametric', 'polar', 'implicit'].indexOf(p.get('v')) >= 0
+            const view = ['explicit', 'parametric', 'polar', 'implicit', 'conic'].indexOf(p.get('v')) >= 0
                 ? p.get('v') : 'explicit';
             this.mode = mode;
             this.view = view;
@@ -797,6 +835,193 @@
                 + (bounded ? '' : '带 ⚠ 的值域含极点，实际可能无界。') + '</p>');
 
             $('properties-panel').innerHTML = html.join('');
+        }
+
+        /* ---------------- 圆锥曲线 ---------------- */
+
+        renderConic(info, segCount) {
+            const n = (v, d) => MathCore.fmt(v, d === undefined ? 6 : d);
+            const p = (pt) => '(' + n(pt.x, 5) + ', ' + n(pt.y, 5) + ')';
+            const html = [];
+
+            html.push(this._propRow('类型', info.typeLabel + (info.equation ? '：' + info.equation : '')));
+            if (info.center) html.push(this._propRow('中心', p(info.center)));
+            if (info.radius !== undefined) html.push(this._propRow('半径', n(info.radius, 6)));
+            if (info.a !== null && info.a !== undefined) html.push(this._propRow('a / b', n(info.a, 6) + ' / ' + n(info.b, 6)));
+            if (info.c !== null && info.c !== undefined) html.push(this._propRow('c（焦距一半）', n(info.c, 6)));
+            if (info.e !== null && info.e !== undefined) html.push(this._propRow('离心率 e', n(info.e, 8)));
+            if (info.foci && info.foci.length) html.push(this._propRow('焦点', info.foci.map(p).join('，')));
+            if (info.vertices && info.vertices.length) html.push(this._propRow('顶点', info.vertices.map(p).join('，')));
+            if (info.directrices && info.directrices.length) html.push(this._propRow('准线', info.directrices.join('，')));
+            if (info.asymptotes && info.asymptotes.length) html.push(this._propRow('渐近线', info.asymptotes.join('，')));
+            if (info.vertex) html.push(this._propRow('抛物线顶点', p(info.vertex)));
+            if (info.focus) html.push(this._propRow('抛物线焦点', p(info.focus)));
+            if (info.directrix) html.push(this._propRow('抛物线准线', info.directrix));
+            if (segCount !== undefined) html.push(this._propRow('绘图', '提取到 ' + segCount + ' 段等值线'));
+            if (info.warnings && info.warnings.length) {
+                html.push('<p class="prop-note warn">' + info.warnings.join('；') + '</p>');
+            }
+
+            $('properties-panel').innerHTML = html.join('');
+        }
+
+        showConicTangent() {
+            try {
+                if (!root.MathConic) throw new Error('圆锥曲线模块未加载');
+                if (this.mode !== '2d' || this.view !== 'conic') throw new Error('请先切换到圆锥曲线模式');
+                const exprs = this.validateAll();
+                const x0 = parseFloat(val('conic-px'));
+                const y0 = parseFloat(val('conic-py'));
+                if (!Number.isFinite(x0) || !Number.isFinite(y0)) throw new Error('切点坐标必须是数字');
+                const t = root.MathConic.tangentAt(exprs[0], x0, y0);
+                $('conic-tangent-result').textContent = '切线：' + t.equation
+                    + (Number.isFinite(t.slope) ? '（斜率 ' + MathCore.fmt(t.slope, 6) + '）' : '（竖直切线）');
+
+                const range = readRange();
+                if (Number.isFinite(t.slope)) {
+                    const xs = [range.xMin, range.xMax];
+                    this.plotter.addTrace({
+                        x: xs,
+                        y: xs.map((x) => t.point.y + t.slope * (x - t.point.x)),
+                        type: 'scattergl', mode: 'lines',
+                        line: { color: '#ffb86c', width: 2, dash: 'dash' },
+                        name: '切线'
+                    });
+                } else {
+                    this.plotter.addTrace({
+                        x: [x0, x0], y: [range.yMin, range.yMax],
+                        type: 'scattergl', mode: 'lines',
+                        line: { color: '#ffb86c', width: 2, dash: 'dash' },
+                        name: '切线'
+                    });
+                }
+                this.plotter.addTrace({
+                    x: [x0], y: [y0], type: 'scatter', mode: 'markers',
+                    marker: { color: '#ffb86c', size: 8 }, name: '切点', hoverinfo: 'skip'
+                });
+            } catch (e) {
+                this.showError(e && e.message ? e.message : String(e));
+            }
+        }
+
+        /* ---------------- 导数工具 ---------------- */
+
+        _derivContext() {
+            if (!root.MathCalculus) throw new Error('导数工具模块未加载');
+            if (this.mode !== '2d' || this.view !== 'explicit') {
+                throw new Error('导数工具目前仅支持显函数模式');
+            }
+            const exprs = this.validateAll();
+            return { expr: exprs[0], range: readRange() };
+        }
+
+        renderDeriv(html) {
+            const box = $('deriv-result');
+            if (box) box.innerHTML = html;
+        }
+
+        showTangent() {
+            try {
+                const ctx = this._derivContext();
+                const x0 = parseFloat(val('tangent-x'));
+                if (!Number.isFinite(x0)) throw new Error('切点 x₀ 必须是数字');
+                const t = root.MathCalculus.tangentAt(ctx.expr, x0);
+
+                this.renderDeriv(
+                    '<div class="deriv-row"><span class="k">切点</span><span>(' + MathCore.fmt(t.point.x, 6) + ', ' + MathCore.fmt(t.point.y, 6) + ')</span></div>'
+                    + '<div class="deriv-row"><span class="k">斜率</span><span>' + MathCore.fmt(t.slope, 8) + '</span></div>'
+                    + '<div class="deriv-row"><span class="k">切线</span><span class="mono">' + t.tangent + '</span></div>'
+                    + '<div class="deriv-row"><span class="k">法线</span><span class="mono">' + t.normal + '</span></div>'
+                );
+
+                const xs = [ctx.range.xMin, ctx.range.xMax];
+                if (Number.isFinite(t.slope)) {
+                    this.plotter.addTrace({
+                        x: xs,
+                        y: xs.map((x) => t.point.y + t.slope * (x - t.point.x)),
+                        type: 'scattergl', mode: 'lines',
+                        line: { color: '#ffb86c', width: 2, dash: 'dash' },
+                        name: '切线'
+                    });
+                }
+                if (Number.isFinite(t.slope) && Math.abs(t.slope) > 1e-9) {
+                    const m2 = -1 / t.slope;
+                    this.plotter.addTrace({
+                        x: xs,
+                        y: xs.map((x) => t.point.y + m2 * (x - t.point.x)),
+                        type: 'scattergl', mode: 'lines',
+                        line: { color: 'rgba(169,154,243,.75)', width: 1.5, dash: 'dot' },
+                        name: '法线'
+                    });
+                }
+                this.plotter.addTrace({
+                    x: [t.point.x], y: [t.point.y],
+                    type: 'scatter', mode: 'markers',
+                    marker: { color: '#ffb86c', size: 8 },
+                    name: '切点', hoverinfo: 'skip'
+                });
+            } catch (e) {
+                this.showError(e && e.message ? e.message : String(e));
+            }
+        }
+
+        showExtrema() {
+            try {
+                const ctx = this._derivContext();
+                const g = root.MathCalculus.globalExtrema(ctx.expr, ctx.range.xMin, ctx.range.xMax);
+                const table = root.MathCalculus.monotonicTable(ctx.expr, ctx.range.xMin, ctx.range.xMax);
+                const n = (v) => MathCore.fmt(v, 6);
+
+                const rows = table.rows.map((r) => '<div class="deriv-row"><span class="k">' + r.sign + '</span><span>'
+                    + '[' + n(r.from) + ', ' + n(r.to) + '] ' + (r.dir > 0 ? '递增' : '递减') + '</span></div>').join('');
+                const candidates = g.candidates.map((p) => '<div class="deriv-row"><span class="k">' + p.kind + '</span><span>('
+                    + n(p.x) + ', ' + n(p.y) + ')</span></div>').join('');
+
+                this.renderDeriv(
+                    '<div class="deriv-row highlight"><span class="k">最大值</span><span>(' + n(g.max.x) + ', ' + n(g.max.y) + ') · ' + g.max.kind + '</span></div>'
+                    + '<div class="deriv-row highlight"><span class="k">最小值</span><span>(' + n(g.min.x) + ', ' + n(g.min.y) + ') · ' + g.min.kind + '</span></div>'
+                    + '<div class="deriv-sub">单调性</div>' + rows
+                    + '<div class="deriv-sub">候选点</div>' + candidates
+                );
+
+                this.plotter.addTrace({
+                    x: [g.max.x, g.min.x], y: [g.max.y, g.min.y],
+                    text: ['最大值', '最小值'], textposition: ['top center', 'bottom center'],
+                    type: 'scatter', mode: 'markers+text',
+                    marker: { color: ['#ffb86c', '#8be9fd'], size: 9 },
+                    name: '区间最值', hoverinfo: 'skip'
+                });
+            } catch (e) {
+                this.showError(e && e.message ? e.message : String(e));
+            }
+        }
+
+        /* ---------------- 知识地图的“在实验室验证” ---------------- */
+
+        openDemo(expr, tool) {
+            try {
+                this.mode = '2d';
+                if (tool === 'conic') {
+                    this.view = 'conic';
+                    $('conic-expr').value = expr;
+                } else if (tool === 'parametric') {
+                    this.view = 'parametric';
+                    const parts = String(expr).split('|');
+                    $('param-x').value = parts[0] || '';
+                    $('param-y').value = parts[1] || '';
+                } else if (tool === 'polar') {
+                    this.view = 'polar';
+                    $('polar-r').value = expr;
+                } else {
+                    this.view = 'explicit';
+                    $('function-expr').value = expr;
+                }
+                this.syncParams();
+                this.updateUI();
+                this.plot();
+            } catch (e) {
+                this.showError(e && e.message ? e.message : String(e));
+            }
         }
 
         /* ---------------- 多函数对比 ---------------- */
