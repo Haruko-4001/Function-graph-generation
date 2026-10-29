@@ -57,6 +57,7 @@
                 const files = [
                     'js/math-core.js',
                     'js/curriculum-data.js',
+                    'js/pattern-data.js',
                     'js/facts.js',
                     'js/storyboard.js',
                     'js/player.js',
@@ -225,6 +226,14 @@
                         <button class="btn ghost" id="conic-tangent-btn" type="button">求切线</button>
                     </div>
                     <div id="conic-tangent-result" class="story-hint"></div>
+                    <div class="conic-line">
+                        <label for="conic-k">弦：y =</label>
+                        <input type="text" id="conic-k" value="1" aria-label="直线斜率 k">
+                        <span class="conic-times">x +</span>
+                        <input type="text" id="conic-m" value="0" aria-label="直线截距 m">
+                        <button class="btn ghost" id="conic-chord-btn" type="button">弦长 / 中点</button>
+                    </div>
+                    <div id="conic-chord-result" class="story-hint"></div>
                 </div>
 
                 <div id="panel-3d" style="display:none;">
@@ -293,6 +302,13 @@
                     <button class="btn ghost" id="extrema-btn" type="button">闭区间最值</button>
                 </div>
                 <div id="deriv-result" class="deriv-result empty">在显函数模式下，输入切点即可求切线、法线与区间最值。</div>
+                <div class="deriv-scan">
+                    <span>零点扫描</span>
+                    <input type="text" id="scan-param" value="a" aria-label="参数名">
+                    <input type="text" id="scan-min" value="-3" aria-label="参数最小值">
+                    <input type="text" id="scan-max" value="3" aria-label="参数最大值">
+                    <button class="btn ghost" id="zero-scan-btn" type="button">扫描</button>
+                </div>
             </div>
 
             <div class="panel">
@@ -385,11 +401,19 @@
                 <p>8 个模块 · 62 个知识节点 · 60 条结论 · 90 个题型标签</p>
             </div>
             <div class="learn-head-actions">
+                <button class="btn ghost learn-export" id="learn-export" type="button">导出讲义 <span id="learn-export-count">0</span></button>
                 <button class="learn-close" id="learn-close" type="button" aria-label="关闭知识地图">
                     <span aria-hidden="true">×</span>
                 </button>
             </div>
         </header>
+        <div class="learn-tabbar" role="tablist" aria-label="知识地图视图">
+            <button class="learn-tab active" data-learn-tab="nodes" role="tab" aria-selected="true">知识节点</button>
+            <button class="learn-tab" data-learn-tab="patterns" role="tab" aria-selected="false">题型卡</button>
+            <button class="learn-tab" data-learn-tab="conclusions" role="tab" aria-selected="false">结论库</button>
+            <button class="learn-tab" data-learn-tab="practice" role="tab" aria-selected="false">自测</button>
+            <button class="learn-tab" data-learn-tab="experiments" role="tab" aria-selected="false">实验</button>
+        </div>
         <div class="learn-body">
             <aside class="learn-side">
                 <label class="learn-search-label" for="learn-search">搜索知识点或结论</label>

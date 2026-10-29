@@ -215,11 +215,29 @@ try {
         await new Promise(r => setTimeout(r, 600));
         const groups = document.querySelectorAll('.learn-group').length;
         const title = (document.querySelector('.learn-card h3') || {}).textContent || '';
+        document.querySelector('.learn-tab[data-learn-tab="patterns"]').click();
+        await new Promise(r => setTimeout(r, 300));
+        const patterns = document.querySelectorAll('.learn-pattern-node').length;
+        document.querySelector('.learn-pattern-node').click();
+        await new Promise(r => setTimeout(r, 200));
+        const practiceBtn = document.querySelector('[data-start-practice="pattern"]');
+        if (practiceBtn) practiceBtn.click();
+        await new Promise(r => setTimeout(r, 300));
+        const options = document.querySelectorAll('.practice-option').length;
+        document.querySelector('.learn-tab[data-learn-tab="experiments"]').click();
+        await new Promise(r => setTimeout(r, 300));
+        const experiments = document.querySelectorAll('.experiment-btn').length;
+        document.querySelector('.experiment-btn[data-experiment="ellipse"]').click();
+        await new Promise(r => setTimeout(r, 900));
+        const expTraces = document.getElementById('experiment-chart').data
+            ? document.getElementById('experiment-chart').data.length : -1;
         document.getElementById('learn-close').click();
         await new Promise(r => setTimeout(r, 260));
-        return { groups, title, hidden: document.getElementById('learn-overlay').hidden };
+        return { groups, title, patterns, options, experiments, expTraces, hidden: document.getElementById('learn-overlay').hidden };
     })()`);
-    check('知识地图可打开', learn.groups === 8 && learn.title.length > 0 && learn.hidden,
+    check('知识地图与题型/自测/实验可用',
+        learn.groups === 8 && learn.title.length > 0 && learn.patterns === 71
+        && learn.options === 4 && learn.experiments === 7 && learn.expTraces >= 2 && learn.hidden,
         JSON.stringify(learn));
 
     check('运行期无异常', exceptions.length === 0, exceptions.slice(0, 3).join('\n'));

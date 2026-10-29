@@ -109,6 +109,8 @@
                 else if (t.id === 'tangent-btn') this.showTangent();
                 else if (t.id === 'extrema-btn') this.showExtrema();
                 else if (t.id === 'conic-tangent-btn') this.showConicTangent();
+                else if (t.id === 'conic-chord-btn') this.showConicChord();
+                else if (t.id === 'zero-scan-btn') this.showZeroScan();
             });
 
             const autoHandler = this.debounce(() => { if (this.autoPlot) this.plot(); }, 800);
@@ -899,6 +901,78 @@
                     x: [x0], y: [y0], type: 'scatter', mode: 'markers',
                     marker: { color: '#ffb86c', size: 8 }, name: '切点', hoverinfo: 'skip'
                 });
+            } catch (e) {
+                this.showError(e && e.message ? e.message : String(e));
+            }
+        }
+
+        showConicChord() {
+            try {
+                if (this.mode !== '2d' || this.view !== 'conic') throw new Error('请先切换到圆锥曲线模式');
+                const k = parseFloat(val('conic-k'));
+                const m = parseFloat(val('conic-m'));
+                if (!Number.isFinite(k) || !Number.isFinite(m)) throw new Error('直线参数 k、m 必须是数字');
+                const exprs = this.validateAll();
+                const r = root.MathConic.chord(exprs[0], k, m);
+                const n = (v) => MathCore.fmt(v, 6);
+                const p = (pt) => '(' + n(pt.x) + ', ' + n(pt.y) + ')';
+                const box = $('conic-chord-result');
+                box.textContent = r.status + '：' + r.points.length + ' 个交点'
+                    + (r.length ? '，弦长 ' + n(r.length) : '')
+                    + (r.midpoint ? '，中点 ' + p(r.midpoint) : '');
+
+                const range = readRange();
+                const xs = [range.xMin, range.xMax];
+                this.plotter.addTrace({
+                    x: xs, y: xs.map((x) => k * x + m),
+                    type: 'scattergl', mode: 'lines',
+                    line: { color: '#a99af3', width: 1.6, dash: 'dot' },
+                    name: '直线 y = ' + n(k) + 'x + ' + n(m)
+                });
+                if (r.points.length) {
+                    this.plotter.addTrace({
+                        x: r.points.map((pt) => pt.x),
+                        y: r.points.map((pt) => pt.y),
+                        text: r.points.map((pt, i) => 'P' + (i + 1)),
+                        textposition: 'top center',
+                        type: 'scatter', mode: 'markers+text',
+                        marker: { color: '#a99af3', size: 8 },
+                        textfont: { size: 10, color: '#c9c0ff' },
+                        name: '交点', hoverinfo: 'skip'
+                    });
+                }
+                if (r.midpoint) {
+                    this.plotter.addTrace({
+                        x: [r.midpoint.x], y: [r.midpoint.y],
+                        type: 'scatter', mode: 'markers',
+                        marker: { color: '#f1fa8c', size: 7, symbol: 'diamond' },
+                        name: '中点', hoverinfo: 'skip'
+                    });
+                }
+            } catch (e) {
+                this.showError(e && e.message ? e.message : String(e));
+            }
+        }
+
+        showZeroScan() {
+            try {
+                if (!root.MathCalculus) throw new Error('导数工具模块未加载');
+                if (this.mode !== '2d' || this.view !== 'explicit') throw new Error('零点扫描仅支持显函数模式');
+                const raw = MathCore.normalizeExpression(String(val('function-expr')).split(/[;；]/)[0]);
+                if (!raw) throw new Error('请先输入含参数的函数');
+                const param = String(val('scan-param')).trim();
+                const min = parseFloat(val('scan-min'));
+                const max = parseFloat(val('scan-max'));
+                const vars = MathCore.freeSymbols(raw, ['x']);
+                if (vars.indexOf(param) < 0) throw new Error('表达式里没有参数 ' + param);
+
+                const range = readRange();
+                const res = root.MathCalculus.zeroCountScan(raw, param, min, max, 20, range.xMin, range.xMax);
+                const rows = res.rows.map((r) => '<span class="scan-cell"><b>' + param + '=' + MathCore.fmt(r.value, 3)
+                    + '</b><i>' + (Number.isFinite(r.count) ? r.count : '—') + '</i></span>').join('');
+                this.renderDeriv('<div class="deriv-sub">零点个数随 ' + param + ' 变化（' + MathCore.fmt(min, 3)
+                    + ' → ' + MathCore.fmt(max, 3) + '）</div><div class="scan-grid">' + rows + '</div>'
+                    + '<p class="prop-note">数值扫描：每个参数值独立求根，双击切点可核对图像。</p>');
             } catch (e) {
                 this.showError(e && e.message ? e.message : String(e));
             }

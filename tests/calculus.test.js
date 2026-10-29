@@ -67,6 +67,18 @@ test('单调表给出递减与递增两段', () => {
     assert(t.critical.length === 1, '应有一个驻点');
 });
 
+test('零点个数随参数变化：x²−a', () => {
+    const r = K.zeroCountScan('x^2 - a', 'a', 1, 4, 3, -10, 10);
+    assert(r.rows.length === 4, '应有 4 个采样点');
+    r.rows.forEach((row) => assert(row.count === 2, 'a=' + row.value + ' 应有 2 个零点，实际 ' + row.count));
+});
+
+test('参数名不在表达式中应报错', () => {
+    let msg = '';
+    try { K.zeroCountScan('x^2 - 1', 'a', -1, 1, 3, -10, 10); } catch (e) { msg = e.message; }
+    assert(msg.indexOf('没有参数') >= 0, '应提示缺少参数：' + msg);
+});
+
 test('非法区间应报错', () => {
     let msg = '';
     try { K.globalExtrema('x', 2, 1); } catch (e) { msg = e.message; }

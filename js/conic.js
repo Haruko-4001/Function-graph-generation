@@ -419,6 +419,73 @@
         };
     }
 
+
+    function solveQuadratic(a, b, c) {
+        const scale = Math.max(1, Math.abs(a), Math.abs(b), Math.abs(c));
+        const eps = 1e-10 * scale;
+        if (Math.abs(a) <= eps) {
+            if (Math.abs(b) <= eps) return { kind: Math.abs(c) <= eps ? 'all' : 'none', roots: [] };
+            return { kind: 'linear', roots: [-c / b] };
+        }
+        const d = b * b - 4 * a * c;
+        if (d < -1e-9 * scale) return { kind: 'none', roots: [], discriminant: d };
+        if (Math.abs(d) <= 1e-8 * scale) return { kind: 'tangent', roots: [-b / (2 * a)], discriminant: 0 };
+        const sq = Math.sqrt(d);
+        const q = -0.5 * (b + (b >= 0 ? sq : -sq));
+        const r1 = q / a;
+        const r2 = c / q;
+        return { kind: 'two', roots: [Math.min(r1, r2), Math.max(r1, r2)], discriminant: d };
+    }
+
+    /** 直线 y = kx + m 与圆锥曲线的交点、弦长与中点 */
+    function chord(expr, k, m) {
+        if (!Number.isFinite(k) || !Number.isFinite(m)) throw new Error('直线参数必须是数字');
+        const info = analyze(expr);
+        const c = info.coefficients;
+        const A = c[0], B = c[1], C = c[2], D = c[3], E = c[4], F = c[5];
+        const a2 = A + B * k + C * k * k;
+        const a1 = B * m + 2 * C * k * m + D + E * k;
+        const a0 = C * m * m + E * m + F;
+        const sol = solveQuadratic(a2, a1, a0);
+        const points = sol.roots.map(function (x) { return { x: x, y: k * x + m }; });
+        return summarizeChord(info, points, sol);
+    }
+
+    /** 竖直线 x = c 与圆锥曲线的交点 */
+    function chordVertical(expr, x0) {
+        if (!Number.isFinite(x0)) throw new Error('竖直线位置必须是数字');
+        const info = analyze(expr);
+        const c = info.coefficients;
+        const A = c[0], B = c[1], C = c[2], D = c[3], E = c[4], F = c[5];
+        const a2 = C;
+        const a1 = B * x0 + E;
+        const a0 = A * x0 * x0 + D * x0 + F;
+        const sol = solveQuadratic(a2, a1, a0);
+        const points = sol.roots.map(function (y) { return { x: x0, y: y }; });
+        return summarizeChord(info, points, sol, 'vertical');
+    }
+
+    function summarizeChord(info, points, sol, axis) {
+        let length = 0, midpoint = null;
+        if (points.length === 2) {
+            const dx = points[1].x - points[0].x;
+            const dy = points[1].y - points[0].y;
+            length = Math.sqrt(dx * dx + dy * dy);
+            midpoint = { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 };
+        } else if (points.length === 1) {
+            midpoint = { x: points[0].x, y: points[0].y };
+        }
+        return {
+            type: info.type,
+            axis: axis || 'slope',
+            status: sol.kind === 'two' ? '相交' : (sol.kind === 'tangent' ? '相切' : (sol.kind === 'none' ? '相离' : '重合/退化')),
+            points,
+            length,
+            midpoint,
+            discriminant: sol.discriminant
+        };
+    }
+
     function linearToString(a, b, c) {
         const ax = Math.abs(a) < 1e-9 ? '' : (Math.abs(a - 1) < 1e-9 ? 'x' : (Math.abs(a + 1) < 1e-9 ? '−x' : fmt(a) + 'x'));
         const by = Math.abs(b) < 1e-9 ? '' : (b > 0 ? (ax ? ' + ' : '') : ' − ')
@@ -430,6 +497,8 @@
     return {
         analyze,
         tangentAt,
+        chord,
+        chordVertical,
         toBody,
         fitCoefficients
     };

@@ -104,6 +104,34 @@ test('点不在曲线上应拒绝', () => {
     assert(msg.indexOf('不在曲线上') >= 0, '应提示点不在曲线上：' + msg);
 });
 
+console.log('\n[圆锥曲线：弦长与中点]');
+
+test('椭圆被 y=0 截得的弦长为 4，中点在原点', () => {
+    const r = MathConic.chord('x^2/4 + y^2/9 = 1', 0, 0);
+    assert(r.status === '相交');
+    near(r.length, 4, 1e-9);
+    near(r.midpoint.x, 0, 1e-9);
+    near(r.midpoint.y, 0, 1e-9);
+});
+
+test('切线位置弦长为 0', () => {
+    const r = MathConic.chord('x^2/4 + y^2/9 = 1', 0, 3);
+    assert(r.status === '相切', r.status);
+    near(r.length, 0, 1e-9);
+});
+
+test('竖直线 x=0 截椭圆得弦长 6', () => {
+    const r = MathConic.chordVertical('x^2/4 + y^2/9 = 1', 0);
+    assert(r.status === '相交');
+    near(r.length, 6, 1e-9);
+});
+
+test('相离时没有交点', () => {
+    const r = MathConic.chord('x^2/4 + y^2/9 = 1', 0, 10);
+    assert(r.status === '相离');
+    assert(r.points.length === 0);
+});
+
 console.log('\n========================================');
 console.log('通过 ' + passed + ' / ' + (passed + failed));
 if (failed > 0) {

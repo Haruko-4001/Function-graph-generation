@@ -148,11 +148,38 @@
         return { max, min, candidates };
     }
 
+
+    /**
+     * 零点个数参数扫描：把参数 a 从 min 到 max 等分，逐个代入后求根。
+     * 用于「分离参数 / 零点个数」的数值实验。
+     */
+    function zeroCountScan(expr, param, min, max, steps, xMin, xMax) {
+        if (!param || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(param)) throw new Error('参数名不合法');
+        if (!Number.isFinite(min) || !Number.isFinite(max) || !(max > min)) throw new Error('参数范围无效');
+        if (MathCore.freeSymbols(expr, ['x']).indexOf(param) < 0) throw new Error('表达式里没有参数 ' + param);
+        const n = Math.max(2, Math.min(80, steps || 20));
+        const rows = [];
+        for (let i = 0; i <= n; i++) {
+            const value = min + (max - min) * i / n;
+            let count = 0;
+            try {
+                const inst = MathCore.substituteVariable(expr, param, value);
+                const f = MathCore.makeFunction(inst, ['x']);
+                count = MathCore.findZeros(f, xMin, xMax, { samples: 800 }).length;
+            } catch (e) {
+                count = NaN;
+            }
+            rows.push({ value, count });
+        }
+        return { param, min, max, steps: n, rows };
+    }
+
     return {
         tangentAt,
         tangentThrough,
         monotonicTable,
         globalExtrema,
+        zeroCountScan,
         lineText
     };
 }));
