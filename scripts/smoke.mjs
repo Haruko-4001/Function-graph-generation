@@ -231,13 +231,20 @@ try {
         await new Promise(r => setTimeout(r, 900));
         const expTraces = document.getElementById('experiment-chart').data
             ? document.getElementById('experiment-chart').data.length : -1;
+        document.querySelector('.learn-tab[data-learn-tab="books"]').click();
+        await new Promise(r => setTimeout(r, 300));
+        const chapters = document.querySelectorAll('[data-chapter]').length;
+        document.querySelector('[data-chapter="D-2"]').click();
+        await new Promise(r => setTimeout(r, 300));
+        const topics = document.querySelectorAll('.book-topics li').length;
         document.getElementById('learn-close').click();
         await new Promise(r => setTimeout(r, 260));
-        return { groups, title, patterns, options, experiments, expTraces, hidden: document.getElementById('learn-overlay').hidden };
+        return { groups, title, patterns, options, experiments, expTraces, chapters, topics, hidden: document.getElementById('learn-overlay').hidden };
     })()`);
-    check('知识地图与题型/自测/实验可用',
+    check('知识地图与题型/自测/实验/书目可用',
         learn.groups === 8 && learn.title.length > 0 && learn.patterns === 71
-        && learn.options === 4 && learn.experiments === 7 && learn.expTraces >= 2 && learn.hidden,
+        && learn.options === 4 && learn.experiments === 7 && learn.expTraces >= 2
+        && learn.chapters === 15 && learn.topics === 10 && learn.hidden,
         JSON.stringify(learn));
 
     check('运行期无异常', exceptions.length === 0, exceptions.slice(0, 3).join('\n'));

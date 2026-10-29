@@ -28,6 +28,7 @@ const APP_FILES = [
     'js/math-core.js',
     'js/curriculum-data.js',
     'js/pattern-data.js',
+    'js/book-data.js',
     'js/facts.js',
     'js/storyboard.js',
     'js/player.js',

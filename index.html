@@ -58,6 +58,7 @@
                     'js/math-core.js',
                     'js/curriculum-data.js',
                     'js/pattern-data.js',
+                    'js/book-data.js',
                     'js/facts.js',
                     'js/storyboard.js',
                     'js/player.js',
@@ -133,7 +134,7 @@
 
     <link rel="preconnect" href="https://fonts.loli.net" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet" crossorigin>
+    <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet" crossorigin>
     <link rel="stylesheet" href="css/styles.css">
     <script src="js/motion.js" defer></script>
 </head>
@@ -148,9 +149,9 @@
             </svg>
         </div>
         <div class="brand-copy">
-            <div class="eyebrow">Function Lab · v3.1</div>
+            <div class="eyebrow">函数研究室 · v3.1</div>
             <h1>数学函数可视化与性质分析工具</h1>
-            <p class="subtitle">从一条曲线出发，读懂函数的形状、结构与变化。2D / 3D 绘图 · 性质分析 · 分步讲解 · 脚本导出</p>
+            <p class="subtitle">从一条曲线出发，读懂函数的形状、结构与变化。<span class="subtitle-features">2D / 3D 绘图 · 性质分析 · 分步讲解 · 脚本导出</span></p>
         </div>
         <div class="header-badges" aria-label="运行方式">
             <span class="badge">纯前端 · 本地计算</span>
@@ -163,7 +164,7 @@
             <button class="tab active" data-mode="2d" role="tab" aria-selected="true">2D 图像</button>
             <button class="tab" data-mode="3d" role="tab" aria-selected="false">3D 曲面</button>
         </div>
-        <button class="btn ghost learn-entry" id="learn-btn" type="button" aria-haspopup="dialog">知识地图</button>
+        <button class="btn ghost learn-entry" id="learn-btn" type="button" aria-haspopup="dialog">学习中心</button>
     </div>
 
     <div class="layout">
@@ -396,9 +397,9 @@
     <section class="learn-shell" role="dialog" aria-modal="true" aria-labelledby="learn-title">
         <header class="learn-head">
             <div>
-                <div class="eyebrow">Learning Map</div>
-                <h2 id="learn-title">函数知识地图</h2>
-                <p>8 个模块 · 62 个知识节点 · 60 条结论 · 90 个题型标签</p>
+                <div class="eyebrow">Study Desk</div>
+                <h2 id="learn-title">学习中心</h2>
+                <p>8 个模块 · 62 个知识节点 · 71 个题型族 · 60 条结论 · 15 章书目</p>
             </div>
             <div class="learn-head-actions">
                 <button class="btn ghost learn-export" id="learn-export" type="button">导出讲义 <span id="learn-export-count">0</span></button>
@@ -410,6 +411,7 @@
         <div class="learn-tabbar" role="tablist" aria-label="知识地图视图">
             <button class="learn-tab active" data-learn-tab="nodes" role="tab" aria-selected="true">知识节点</button>
             <button class="learn-tab" data-learn-tab="patterns" role="tab" aria-selected="false">题型卡</button>
+            <button class="learn-tab" data-learn-tab="books" role="tab" aria-selected="false">书目</button>
             <button class="learn-tab" data-learn-tab="conclusions" role="tab" aria-selected="false">结论库</button>
             <button class="learn-tab" data-learn-tab="practice" role="tab" aria-selected="false">自测</button>
             <button class="learn-tab" data-learn-tab="experiments" role="tab" aria-selected="false">实验</button>

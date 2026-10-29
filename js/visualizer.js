@@ -19,7 +19,7 @@
     const MathCore = root.MathCore;
 
     /** 曲线配色（色盲友好） */
-    const PALETTE = ['#64ffda', '#ffb86c', '#ff79c6', '#8be9fd', '#50fa7b', '#f1fa8c'];
+    const PALETTE = ['#2f6b52', '#b5613a', '#6b5b95', '#3f6f8f', '#8a7a3f', '#7d5a6b'];
 
     /** 每帧最多计算的点数（分块异步的块大小） */
     const CHUNK = 4000;
@@ -95,12 +95,12 @@
 
         _baseLayout(title) {
             return {
-                title: { text: title, font: { color: '#fff', size: 15 } },
-                font: { family: 'Noto Sans SC, Microsoft YaHei, sans-serif', color: '#e6e6e6' },
+                title: { text: title, font: { color: '#24302a', size: 14, family: 'Noto Serif SC, Songti SC, serif' } },
+                font: { family: 'Noto Sans SC, Microsoft YaHei, sans-serif', color: '#5f675f', size: 11 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(10,22,40,0.55)',
+                plot_bgcolor: '#fbf8f1',
                 showlegend: true,
-                legend: { orientation: 'h', y: 1.1 },
+                legend: { orientation: 'h', y: 1.1, font: { size: 10, color: '#4f5a53' } },
                 autosize: true,
                 margin: { l: 60, r: 25, t: 60, b: 50 }
             };
@@ -111,7 +111,7 @@
                 title: titleText,
                 range: range,
                 gridcolor: gridColor,
-                zerolinecolor: 'rgba(255,255,255,.4)'
+                zerolinecolor: 'rgba(36,48,42,.28)', linecolor: 'rgba(36,48,42,.22)'
             };
         }
 
@@ -191,8 +191,8 @@
             }
 
             const layout = this._baseLayout('y = f(x)');
-            layout.xaxis = this._axis2D('x', [xMin, xMax], 'rgba(255,255,255,.12)');
-            layout.yaxis = this._axis2D('y', [yMin, yMax], 'rgba(255,255,255,.12)');
+            layout.xaxis = this._axis2D('x', [xMin, xMax], 'rgba(36,48,42,.09)');
+            layout.yaxis = this._axis2D('y', [yMin, yMax], 'rgba(36,48,42,.09)');
 
             if (this._isStale(rid)) return null;
             this.lastSamples = { kind: 'explicit', series: samplesOut };
@@ -229,8 +229,8 @@
             }];
 
             const layout = this._baseLayout('参数方程 (t ∈ [' + tMin + ', ' + tMax + '])');
-            layout.xaxis = this._axis2D('x', xView, 'rgba(255,255,255,.12)');
-            layout.yaxis = this._axis2D('y', yView, 'rgba(255,255,255,.12)');
+            layout.xaxis = this._axis2D('x', xView, 'rgba(36,48,42,.09)');
+            layout.yaxis = this._axis2D('y', yView, 'rgba(36,48,42,.09)');
 
             if (this._isStale(rid)) return null;
             this.lastSamples = { kind: 'parametric', t: ts, x: xArr, y: yArr, expressions: [exprX, exprY] };
@@ -266,8 +266,8 @@
             }];
 
             const layout = this._baseLayout('极坐标 r = r(θ)');
-            layout.xaxis = this._axis2D('x', view, 'rgba(255,255,255,.12)');
-            layout.yaxis = this._axis2D('y', view, 'rgba(255,255,255,.12)');
+            layout.xaxis = this._axis2D('x', view, 'rgba(36,48,42,.09)');
+            layout.yaxis = this._axis2D('y', view, 'rgba(36,48,42,.09)');
             layout.yaxis.scaleanchor = 'x';
 
             if (this._isStale(rid)) return null;
@@ -378,7 +378,7 @@
 
             // 圆锥曲线的焦点/顶点/中心等标记
             if (opts && Array.isArray(opts.markers) && opts.markers.length) {
-                const kinds = { focus: '#ffb86c', vertex: '#8be9fd', center: '#f1fa8c' };
+                const kinds = { focus: '#b5613a', vertex: '#3f6f8f', center: '#8a7a3f' };
                 const groups = {};
                 opts.markers.forEach(function (m) {
                     const kind = m.kind || 'vertex';
@@ -390,12 +390,12 @@
                     traces.push({
                         x: list.map(function (m) { return m.x; }),
                         y: list.map(function (m) { return m.y; }),
-                        text: list.map(function (m) { return m.label || ''; }),
+                        text: list.map(function (m) { return kind === 'vertex' ? '' : (m.label || ''); }),
                         textposition: kind === 'center' ? 'bottom center' : 'top center',
                         type: 'scatter',
-                        mode: 'markers+text',
-                        marker: { color: kinds[kind] || '#ffffff', size: 9, line: { color: 'rgba(7,13,23,.8)', width: 1 } },
-                        textfont: { size: 11, color: kinds[kind] || '#ffffff' },
+                        mode: kind === 'vertex' ? 'markers' : 'markers+text',
+                        marker: { color: kinds[kind] || '#24302a', size: 8, line: { color: 'rgba(255,253,248,.95)', width: 1 } },
+                        textfont: { size: 10, color: kinds[kind] || '#24302a' },
                         name: kind === 'focus' ? '焦点' : (kind === 'center' ? '中心' : '顶点'),
                         hoverinfo: 'skip'
                     });
@@ -406,13 +406,13 @@
             // 标题靠左、字号收敛，避免与图例/工具栏在顶部打架
             layout.title = {
                 text: (opts && opts.title) || ('隐函数 ' + expr + ' = 0'),
-                font: { color: '#b5c4d7', size: 13 },
+                font: { color: '#4f5a53', size: 12 },
                 x: 0.012, xanchor: 'left', y: 0.985, yanchor: 'top'
             };
             layout.showlegend = false;
             layout.margin.t = 46;
-            layout.xaxis = this._axis2D('x', [xMin, xMax], 'rgba(255,255,255,.12)');
-            layout.yaxis = this._axis2D('y', [yMin, yMax], 'rgba(255,255,255,.12)');
+            layout.xaxis = this._axis2D('x', [xMin, xMax], 'rgba(36,48,42,.09)');
+            layout.yaxis = this._axis2D('y', [yMin, yMax], 'rgba(36,48,42,.09)');
             layout.yaxis.scaleanchor = 'x';
 
             this.lastSamples = { kind: 'implicit', segments: segments.length, expression: expr };
@@ -470,9 +470,9 @@
 
             const layout = this._baseLayout('z = ' + expr);
             layout.scene = {
-                xaxis: { title: 'x', gridcolor: 'rgba(255,255,255,.15)' },
-                yaxis: { title: 'y', gridcolor: 'rgba(255,255,255,.15)' },
-                zaxis: { title: 'z', gridcolor: 'rgba(255,255,255,.15)' }
+                xaxis: { title: 'x', gridcolor: 'rgba(36,48,42,.1)' },
+                yaxis: { title: 'y', gridcolor: 'rgba(36,48,42,.1)' },
+                zaxis: { title: 'z', gridcolor: 'rgba(36,48,42,.1)' }
             };
 
             if (this._isStale(rid)) return null;

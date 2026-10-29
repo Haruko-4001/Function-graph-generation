@@ -15,6 +15,8 @@
     const patternLib = window.MathPatterns || null;
     const patterns = patternLib ? patternLib.patterns : [];
     const patternById = patternLib ? patternLib.byId : {};
+    const bookLib = window.MathBooks || null;
+    const books = bookLib ? bookLib.books : [];
 
     const $ = (id) => document.getElementById(id);
     const overlay = $('learn-overlay');
@@ -34,13 +36,13 @@
 
     const EXP_BASE = {
         paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(5,14,27,.55)',
-        font: { color: '#b5c4d7', size: 10 },
+        plot_bgcolor: '#fbf8f1',
+        font: { color: '#5f675f', size: 10 },
         margin: { l: 44, r: 18, t: 34, b: 56 },
         showlegend: true,
         legend: { orientation: 'h', y: -0.18, x: 0, font: { size: 9 } },
-        xaxis: { gridcolor: 'rgba(155,180,215,.1)', zerolinecolor: 'rgba(155,180,215,.22)' },
-        yaxis: { gridcolor: 'rgba(155,180,215,.1)', zerolinecolor: 'rgba(155,180,215,.22)' }
+        xaxis: { gridcolor: 'rgba(36,48,42,.08)', zerolinecolor: 'rgba(36,48,42,.22)' },
+        yaxis: { gridcolor: 'rgba(36,48,42,.08)', zerolinecolor: 'rgba(36,48,42,.22)' }
     };
 
     function lin(a, b, n) {
@@ -61,11 +63,11 @@
                 const xs = lin(-0.2, 3.2, 240);
                 return {
                     traces: [
-                        { x: xs, y: xs.map((x) => x * x), type: 'scattergl', mode: 'lines', name: 'y=x²', line: { color: '#72e4ca', width: 2 } },
-                        { x: [x0, x1], y: [y0, y1], type: 'scatter', mode: 'lines+markers', name: '割线', line: { color: '#ffb86c', width: 1.8, dash: 'dot' }, marker: { size: 5 } },
-                        { x: xs, y: xs.map((x) => 2 * x - 1), type: 'scattergl', mode: 'lines', name: '切线', line: { color: '#a99af3', width: 1.6, dash: 'dash' } }
+                        { x: xs, y: xs.map((x) => x * x), type: 'scattergl', mode: 'lines', name: 'y=x²', line: { color: '#2f6b52', width: 2 } },
+                        { x: [x0, x1], y: [y0, y1], type: 'scatter', mode: 'lines+markers', name: '割线', line: { color: '#b5613a', width: 1.8, dash: 'dot' }, marker: { size: 5 } },
+                        { x: xs, y: xs.map((x) => 2 * x - 1), type: 'scattergl', mode: 'lines', name: '切线', line: { color: '#6b5b95', width: 1.6, dash: 'dash' } }
                     ],
-                    layout: Object.assign({}, EXP_BASE, { title: { text: '割线斜率 ' + k.toFixed(4) + ' → 切线斜率 2', font: { size: 11, color: '#b5c4d7' }, x: 0.01 } }),
+                    layout: Object.assign({}, EXP_BASE, { title: { text: '割线斜率 ' + k.toFixed(4) + ' → 切线斜率 2', font: { size: 11, color: '#4f5a53' }, x: 0.01 } }),
                     note: '当 h=' + h.toFixed(2) + ' 时，割线斜率为 <b>' + k.toFixed(4) + '</b>；h→0 时趋近 2。'
                 };
             }
@@ -78,16 +80,16 @@
                 const k = 3 * x0 * x0 - 3;
                 const xs = lin(-2.6, 2.6, 260);
                 const traces = [
-                    { x: xs, y: xs.map((x) => x * x * x - 3 * x), type: 'scattergl', mode: 'lines', name: 'f(x)', line: { color: '#72e4ca', width: 2 } },
-                    { x: xs, y: xs.map((x) => y0 + k * (x - x0)), type: 'scattergl', mode: 'lines', name: '切线', line: { color: '#ffb86c', width: 1.8, dash: 'dash' } }
+                    { x: xs, y: xs.map((x) => x * x * x - 3 * x), type: 'scattergl', mode: 'lines', name: 'f(x)', line: { color: '#2f6b52', width: 2 } },
+                    { x: xs, y: xs.map((x) => y0 + k * (x - x0)), type: 'scattergl', mode: 'lines', name: '切线', line: { color: '#b5613a', width: 1.8, dash: 'dash' } }
                 ];
                 if (Math.abs(k) > 1e-6) {
                     const m2 = -1 / k;
-                    traces.push({ x: xs, y: xs.map((x) => y0 + m2 * (x - x0)), type: 'scattergl', mode: 'lines', name: '法线', line: { color: '#a99af3', width: 1.4, dash: 'dot' } });
+                    traces.push({ x: xs, y: xs.map((x) => y0 + m2 * (x - x0)), type: 'scattergl', mode: 'lines', name: '法线', line: { color: '#6b5b95', width: 1.4, dash: 'dot' } });
                 }
                 return {
                     traces,
-                    layout: Object.assign({}, EXP_BASE, { title: { text: 'f′(x₀) = ' + k.toFixed(3), font: { size: 11, color: '#b5c4d7' }, x: 0.01 } }),
+                    layout: Object.assign({}, EXP_BASE, { title: { text: 'f′(x₀) = ' + k.toFixed(3), font: { size: 11, color: '#4f5a53' }, x: 0.01 } }),
                     note: '切点 (' + x0.toFixed(2) + ', ' + y0.toFixed(2) + ')，斜率 <b>' + k.toFixed(3) + '</b>；法线斜率 ' + (Math.abs(k) > 1e-6 ? (-1 / k).toFixed(3) : '不存在') + '。'
                 };
             }
@@ -103,10 +105,10 @@
                 const r = window.MathCore.analyzeFunction('x^3 - ' + a + '*x', { xMin: -3, xMax: 3 });
                 return {
                     traces: [
-                        { x: xs, y: xs.map(f), type: 'scattergl', mode: 'lines', name: 'f(x)', line: { color: '#72e4ca', width: 2 } },
-                        { x: xs, y: xs.map(d), type: 'scattergl', mode: 'lines', name: "f′(x)", line: { color: '#ffb86c', width: 1.5, dash: 'dot' } }
+                        { x: xs, y: xs.map(f), type: 'scattergl', mode: 'lines', name: 'f(x)', line: { color: '#2f6b52', width: 2 } },
+                        { x: xs, y: xs.map(d), type: 'scattergl', mode: 'lines', name: "f′(x)", line: { color: '#b5613a', width: 1.5, dash: 'dot' } }
                     ],
-                    layout: Object.assign({}, EXP_BASE, { title: { text: 'f′>0 的区间就是递增区间', font: { size: 11, color: '#b5c4d7' }, x: 0.01 } }),
+                    layout: Object.assign({}, EXP_BASE, { title: { text: 'f′>0 的区间就是递增区间', font: { size: 11, color: '#4f5a53' }, x: 0.01 } }),
                     note: '极小值 x≈' + (r.extrema.minima[0] ? r.extrema.minima[0].x.toFixed(3) : '—')
                         + '，极大值 x≈' + (r.extrema.maxima[0] ? r.extrema.maxima[0].x.toFixed(3) : '—') + '。'
                 };
@@ -125,10 +127,10 @@
                 const ts = lin(0, Math.PI * 2, 240);
                 return {
                     traces: [
-                        { x: ts.map((x) => a * Math.cos(x)), y: ts.map((x) => b * Math.sin(x)), type: 'scattergl', mode: 'lines', name: '椭圆', line: { color: '#72e4ca', width: 2 } },
-                        { x: [F1.x, P.x, F2.x], y: [F1.y, P.y, F2.y], type: 'scatter', mode: 'lines+markers', name: 'PF₁、PF₂', line: { color: '#ffb86c', width: 1.6 }, marker: { size: [9, 9, 9], color: ['#ffb86c', '#f1fa8c', '#ffb86c'] }, text: ['F₁', 'P', 'F₂'], textposition: 'top center' }
+                        { x: ts.map((x) => a * Math.cos(x)), y: ts.map((x) => b * Math.sin(x)), type: 'scattergl', mode: 'lines', name: '椭圆', line: { color: '#2f6b52', width: 2 } },
+                        { x: [F1.x, P.x, F2.x], y: [F1.y, P.y, F2.y], type: 'scatter', mode: 'lines+markers', name: 'PF₁、PF₂', line: { color: '#b5613a', width: 1.6 }, marker: { size: [9, 9, 9], color: ['#b5613a', '#8a7a3f', '#b5613a'] }, text: ['F₁', 'P', 'F₂'], textposition: 'top center' }
                     ],
-                    layout: Object.assign({}, EXP_BASE, { title: { text: '|PF₁| + |PF₂| = ' + (d1 + d2).toFixed(3), font: { size: 11, color: '#b5c4d7' }, x: 0.01 }, xaxis: Object.assign({}, EXP_BASE.xaxis, { range: [-6, 6] }), yaxis: Object.assign({}, EXP_BASE.yaxis, { range: [-4.5, 4.5], scaleanchor: 'x', constrain: 'domain' }) }),
+                    layout: Object.assign({}, EXP_BASE, { title: { text: '|PF₁| + |PF₂| = ' + (d1 + d2).toFixed(3), font: { size: 11, color: '#4f5a53' }, x: 0.01 }, xaxis: Object.assign({}, EXP_BASE.xaxis, { range: [-6, 6] }), yaxis: Object.assign({}, EXP_BASE.yaxis, { range: [-4.5, 4.5], scaleanchor: 'x', constrain: 'domain' }) }),
                     note: '|PF₁|=' + d1.toFixed(3) + '，|PF₂|=' + d2.toFixed(3) + '，和 <b>' + (d1 + d2).toFixed(3) + '</b>，恒等于 2a=10。'
                 };
             }
@@ -141,10 +143,10 @@
                 const ts = lin(0, Math.PI * 2, 240);
                 return {
                     traces: [
-                        { x: ts.map((t) => a * Math.cos(t)), y: ts.map((t) => b * Math.sin(t)), type: 'scattergl', mode: 'lines', name: '椭圆', line: { color: '#72e4ca', width: 2 } },
-                        { x: [-c, c], y: [0, 0], type: 'scatter', mode: 'markers+text', name: '焦点', marker: { size: 8, color: '#ffb86c' }, text: ['F₁', 'F₂'], textposition: 'bottom center' }
+                        { x: ts.map((t) => a * Math.cos(t)), y: ts.map((t) => b * Math.sin(t)), type: 'scattergl', mode: 'lines', name: '椭圆', line: { color: '#2f6b52', width: 2 } },
+                        { x: [-c, c], y: [0, 0], type: 'scatter', mode: 'markers+text', name: '焦点', marker: { size: 8, color: '#b5613a' }, text: ['F₁', 'F₂'], textposition: 'bottom center' }
                     ],
-                    layout: Object.assign({}, EXP_BASE, { title: { text: 'e = ' + e.toFixed(2) + '，b = ' + b.toFixed(3), font: { size: 11, color: '#b5c4d7' }, x: 0.01 }, xaxis: Object.assign({}, EXP_BASE.xaxis, { range: [-4.8, 4.8] }), yaxis: Object.assign({}, EXP_BASE.yaxis, { range: [-4.2, 4.2], scaleanchor: 'x', constrain: 'domain' }) }),
+                    layout: Object.assign({}, EXP_BASE, { title: { text: 'e = ' + e.toFixed(2) + '，b = ' + b.toFixed(3), font: { size: 11, color: '#4f5a53' }, x: 0.01 }, xaxis: Object.assign({}, EXP_BASE.xaxis, { range: [-4.8, 4.8] }), yaxis: Object.assign({}, EXP_BASE.yaxis, { range: [-4.2, 4.2], scaleanchor: 'x', constrain: 'domain' }) }),
                     note: 'a=4，c=' + c.toFixed(3) + '，b=' + b.toFixed(3) + '。e 越接近 1，短轴越短、图像越扁。'
                 };
             }
@@ -155,8 +157,8 @@
             build(v) {
                 const xs = lin(-8, 8, 260);
                 return {
-                    traces: [{ x: xs, y: xs.map((x) => v.a * Math.sin(x)), type: 'scattergl', mode: 'lines', name: 'y=a·sin x', line: { color: '#72e4ca', width: 2 } }],
-                    layout: Object.assign({}, EXP_BASE, { title: { text: 'a = ' + v.a.toFixed(1), font: { size: 11, color: '#b5c4d7' }, x: 0.01 } }),
+                    traces: [{ x: xs, y: xs.map((x) => v.a * Math.sin(x)), type: 'scattergl', mode: 'lines', name: 'y=a·sin x', line: { color: '#2f6b52', width: 2 } }],
+                    layout: Object.assign({}, EXP_BASE, { title: { text: 'a = ' + v.a.toFixed(1), font: { size: 11, color: '#4f5a53' }, x: 0.01 } }),
                     note: 'a 控制振幅；a<0 时图像关于 x 轴翻转。'
                 };
             }
@@ -173,10 +175,10 @@
                 return {
                     traces: [
                         { x: xs, y: xs.map(() => 0), type: 'scattergl', mode: 'lines', line: { width: 0 }, showlegend: false, hoverinfo: 'skip' },
-                        { x: xs, y: xs.map(f), type: 'scattergl', mode: 'lines', fill: 'tonexty', fillcolor: 'rgba(114,228,202,.18)', line: { color: '#72e4ca', width: 2 }, name: 'f(x)' },
-                        { x: all, y: all.map(f), type: 'scattergl', mode: 'lines', line: { color: 'rgba(114,228,202,.35)', width: 1 }, name: '完整曲线' }
+                        { x: xs, y: xs.map(f), type: 'scattergl', mode: 'lines', fill: 'tonexty', fillcolor: 'rgba(47,107,82,.14)', line: { color: '#2f6b52', width: 2 }, name: 'f(x)' },
+                        { x: all, y: all.map(f), type: 'scattergl', mode: 'lines', line: { color: 'rgba(47,107,82,.35)', width: 1 }, name: '完整曲线' }
                     ],
-                    layout: Object.assign({}, EXP_BASE, { title: { text: '∫₀^' + b.toFixed(2) + ' f = ' + area.toFixed(4), font: { size: 11, color: '#b5c4d7' }, x: 0.01 } }),
+                    layout: Object.assign({}, EXP_BASE, { title: { text: '∫₀^' + b.toFixed(2) + ' f = ' + area.toFixed(4), font: { size: 11, color: '#4f5a53' }, x: 0.01 } }),
                     note: '当前面积（带符号）≈ <b>' + area.toFixed(4) + '</b>；面积随上限增加而累积。'
                 };
             }
@@ -195,6 +197,7 @@
             tab: 'nodes',
             nodeId: 'A1',
             patternId: null,
+            chapterId: 'D-1',
             query: '',
             examFilter: 'all',
             experimentId: 'secant',
@@ -331,13 +334,35 @@
         if (search) search.style.display = noSearch ? 'none' : '';
         if (search) {
             search.placeholder = state.tab === 'nodes' ? '例如：极值点偏移、焦点三角形'
-                : state.tab === 'patterns' ? '例如：切线、零点个数、中点弦' : '例如：e²−1、隐零点、放缩';
+                : state.tab === 'patterns' ? '例如：切线、零点个数、中点弦'
+                : state.tab === 'books' ? '例如：放缩、齐次化、阿基米德三角形'
+                : '例如：e²−1、隐零点、放缩';
         }
         if (state.tab === 'nodes') renderTreeNodes();
         else if (state.tab === 'patterns') renderTreePatterns();
+        else if (state.tab === 'books') renderTreeBooks();
         else if (state.tab === 'conclusions') renderTreeConclusions();
         else if (state.tab === 'practice') renderTreePractice();
         else renderTreeExperiments();
+    }
+
+    function renderTreeBooks() {
+        const q = state.query.trim().toLowerCase();
+        const html = books.map((b) => {
+            const chapters = b.chapters.filter((c) => !q
+                || (c.title + ' ' + c.summary + ' ' + c.topics.join(' ')).toLowerCase().indexOf(q) >= 0);
+            if (!chapters.length) return '';
+            const items = chapters.map((c) => '<button type="button" class="learn-node'
+                + (c.id === state.chapterId && state.tab === 'books' ? ' active' : '') + '" data-chapter="' + esc(c.id) + '">'
+                + '<span class="learn-node-id">' + esc(c.id) + '</span>'
+                + '<span class="learn-node-title">' + esc(c.title.replace(/^第.+章\s*/, '')) + '</span>'
+                + '</button>').join('');
+            return '<details class="learn-group" open><summary><span class="learn-group-title">' + esc(b.title) + '</span>'
+                + '<span class="learn-group-stage">' + esc(b.subtitle) + '</span></summary>'
+                + '<div class="learn-nodes">' + items + '</div></details>';
+        }).join('');
+        tree.innerHTML = '<p class="learn-side-note">两本专著 · ' + books.reduce((n, b) => n + b.chapters.length, 0)
+            + ' 章 · 完整小节索引</p>' + (html || '<p class="learn-empty">没有匹配的章节。</p>');
     }
 
     function renderTreeExperiments() {
@@ -427,6 +452,42 @@
             + '<button type="button" class="btn ghost" data-start-practice="pattern" data-pattern-id="' + esc(p.id) + '">练这个题型</button>'
             + '</section>';
 
+        card.scrollTop = 0;
+    }
+
+    /* ---------------- 书目 ---------------- */
+
+    function findChapter(id) {
+        for (let i = 0; i < books.length; i++) {
+            const c = books[i].chapters.filter((x) => x.id === id)[0];
+            if (c) return { book: books[i], chapter: c };
+        }
+        return null;
+    }
+
+    function renderChapter(id) {
+        const found = findChapter(id) || findChapter('D-1');
+        if (!found) return;
+        state.chapterId = found.chapter.id;
+        const b = found.book, c = found.chapter;
+        const topics = c.topics.map((t, i) => '<li><span class="book-topic-no">' + String(i + 1).padStart(2, '0') + '</span>'
+            + '<span>' + esc(t) + '</span></li>').join('');
+        const pats = c.patterns.map((pid) => {
+            const p = patternById[pid];
+            return p ? '<button type="button" class="learn-chip action" data-pattern="' + esc(pid) + '">'
+                + esc(pid + ' ' + p.title) + '</button>' : '';
+        }).join('');
+
+        card.innerHTML = '<div class="learn-card-head">'
+            + '<div class="learn-badges"><span class="tag">' + esc(b.title) + '</span>'
+            + '<span class="tag ghost">' + esc(b.subtitle) + '</span></div>'
+            + '<h3>' + esc(c.title) + '</h3>'
+            + '<p class="learn-summary">' + esc(c.summary) + '</p></div>'
+            + '<section class="learn-section"><h4>本章小节</h4><ol class="book-topics">' + topics + '</ol></section>'
+            + (pats ? '<section class="learn-section"><h4>对应题型卡</h4><div class="learn-chips">' + pats + '</div></section>' : '')
+            + '<section class="learn-section"><h4>怎么用这条书目</h4>'
+            + '<p class="learn-summary">先按小节读一遍，再打开对应题型卡看“识别信号—通法—易错点”，'
+            + '最后去实验室或实验页签动手验证。书目只负责结构与路径，具体方法在题型卡里。</p></section>';
         card.scrollTop = 0;
     }
 
@@ -715,6 +776,7 @@
 
     function renderCard() {
         if (state.tab === 'nodes') renderNode(state.nodeId);
+        else if (state.tab === 'books') renderChapter(state.chapterId);
         else if (state.tab === 'patterns') {
             if (state.patternId) renderPattern(state.patternId);
             else card.innerHTML = '<div class="learn-card-head"><h3>题型卡</h3><p class="learn-summary">从左侧选择题型，或直接搜索识别信号。</p></div>';
@@ -739,7 +801,7 @@
     }
 
     function switchTab(tab) {
-        if (['nodes', 'patterns', 'conclusions', 'practice', 'experiments'].indexOf(tab) < 0) return;
+        if (['nodes', 'patterns', 'books', 'conclusions', 'practice', 'experiments'].indexOf(tab) < 0) return;
         state.tab = tab;
         state.query = '';
         if (search) search.value = '';
@@ -797,6 +859,9 @@
 
         const patternBtn = e.target.closest('[data-pattern]');
         if (patternBtn) { state.patternId = patternBtn.dataset.pattern; state.tab = 'patterns'; render(); return; }
+
+        const chapterBtn = e.target.closest('[data-chapter]');
+        if (chapterBtn) { state.chapterId = chapterBtn.dataset.chapter; state.tab = 'books'; render(); return; }
 
         const expBtn = e.target.closest('[data-experiment]');
         if (expBtn) { state.experimentId = expBtn.dataset.experiment; state.tab = 'experiments'; render(); return; }

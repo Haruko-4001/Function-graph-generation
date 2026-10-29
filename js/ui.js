@@ -182,7 +182,7 @@
                 setSelected(b, b.dataset.view === this.view));
 
             const is2D = this.mode === '2d';
-            $('view-switch').style.display = is2D ? 'grid' : 'none';
+            $('view-switch').style.display = is2D ? '' : 'none';
             $('panel-3d').style.display = is2D ? 'none' : 'block';
             $('panel-explicit').style.display = is2D && this.view === 'explicit' ? 'block' : 'none';
             $('panel-parametric').style.display = is2D && this.view === 'parametric' ? 'block' : 'none';
