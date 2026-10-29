@@ -34,6 +34,7 @@ const APP_FILES = [
     'js/manifest.js',
     'js/glossary.js',
     'js/assistant.js',
+    'js/motion.js',
     'js/visualizer.js',
     'js/ui.js',
     'js/main.js'
@@ -85,6 +86,9 @@ async function main() {
         /<link rel="stylesheet" href="css\/styles.css">/,
         literal('<style>\n' + css + '\n</style>')
     );
+
+    // 1.5) 去掉开发版独立加载的动效脚本；单文件版会在应用脚本块中内嵌执行
+    html = html.replace(/\s*<script src="js\/motion\.js" defer><\/script>\n/, '\n');
 
     // 2) 应用脚本转为内嵌源码块
     const appBlocks = APP_FILES.map((f) => {

@@ -165,13 +165,18 @@
         }
 
         updateUI() {
+            const setSelected = (el, selected) => {
+                el.classList.toggle('active', selected);
+                el.setAttribute('aria-selected', selected ? 'true' : 'false');
+            };
+
             document.querySelectorAll('.tab').forEach((t) =>
-                t.classList.toggle('active', t.dataset.mode === this.mode));
+                setSelected(t, t.dataset.mode === this.mode));
             document.querySelectorAll('.view-btn').forEach((b) =>
-                b.classList.toggle('active', b.dataset.view === this.view));
+                setSelected(b, b.dataset.view === this.view));
 
             const is2D = this.mode === '2d';
-            $('view-switch').style.display = is2D ? 'flex' : 'none';
+            $('view-switch').style.display = is2D ? 'grid' : 'none';
             $('panel-3d').style.display = is2D ? 'none' : 'block';
             $('panel-explicit').style.display = is2D && this.view === 'explicit' ? 'block' : 'none';
             $('panel-parametric').style.display = is2D && this.view === 'parametric' ? 'block' : 'none';
@@ -182,6 +187,11 @@
             const labels = this.mode === '3d' ? ['x 范围', 'y 范围'] : (rangeLabel[this.view] || ['x 范围', 'y 范围']);
             $('range-label-x').textContent = labels[0];
             $('range-label-y').textContent = labels[1];
+
+            if (window.MathMotion && window.MathMotion.enter) {
+                const activePanelId = this.mode === '3d' ? 'panel-3d' : 'panel-' + this.view;
+                window.MathMotion.enter($(activePanelId));
+            }
         }
 
         loadPreset(expr, mode) {
@@ -291,7 +301,7 @@
                 const v = this.params[k];
                 return '<div class="param-row">'
                     + '<span class="pk">' + k + ' = <b>' + v.toFixed(1) + '</b></span>'
-                    + '<input type="range" min="-5" max="5" step="0.1" value="' + v + '" data-param="' + k + '">'
+                    + '<input type="range" min="-5" max="5" step="0.1" value="' + v + '" data-param="' + k + '" aria-label="参数 ' + k + '">'
                     + '</div>';
             }).join('');
         }

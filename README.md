@@ -175,6 +175,7 @@ math_function2.0/
 │   ├── visualizer.js   # Plotly 绘图引擎（分块异步计算）
 │   ├── assistant.js    # 自然语言助手（意图识别 + 求解步骤）
 │   ├── ui.js           # 应用控制器（状态/校验/报告/导出/分享）
+│   ├── motion.js       # 克制的入场/切换动效（尊重减少动态偏好）
 │   └── main.js         # 启动引导
 ├── tests/
 │   ├── math-core.test.js   # 核心算法（44 例）

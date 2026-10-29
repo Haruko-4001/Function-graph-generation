@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#070d17">
     <title>数学函数可视化与性质分析工具 v3.0</title>
     <meta name="description" content="开源数学函数可视化工具：2D/3D 绘图、零点/极值/单调性/凹凸性/渐近线分析、定积分、极限、泰勒展开与智能求解助手">
 
@@ -63,6 +64,7 @@
                     'js/manifest.js',
                     'js/glossary.js',
                     'js/assistant.js',
+                    'js/motion.js',
                     'js/visualizer.js',
                     'js/ui.js',
                     'js/main.js'
@@ -124,38 +126,55 @@
         })();
     </script>
 
+    <link rel="preconnect" href="https://fonts.loli.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet" crossorigin>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="js/motion.js" defer></script>
 </head>
 <body>
 <div class="container">
-    <header>
-        <h1>数学函数可视化与性质分析工具</h1>
-        <p class="subtitle">2D / 3D 绘图 · 零点 · 极值 · 单调性 · 凹凸性 · 渐近线 · 积分 · 极限 · 泰勒展开</p>
+    <header class="app-header">
+        <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 25.5H28M4 6.5V27" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".5"/>
+                <path d="M5 18.5C8.3 18.5 8.3 10 12.2 10s3.9 12 7.8 12 3.9-12 7-12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                <circle cx="20" cy="22" r="2.2" fill="currentColor"/>
+            </svg>
+        </div>
+        <div class="brand-copy">
+            <div class="eyebrow">Function Lab · v3.0</div>
+            <h1>数学函数可视化与性质分析工具</h1>
+            <p class="subtitle">从一条曲线出发，读懂函数的形状、结构与变化。2D / 3D 绘图 · 性质分析 · 分步讲解 · 脚本导出</p>
+        </div>
+        <div class="header-badges" aria-label="运行方式">
+            <span class="badge">纯前端 · 本地计算</span>
+            <span class="badge muted">无需后端 · 开源 MIT</span>
+        </div>
     </header>
 
-    <div class="tabs">
-        <button class="tab active" data-mode="2d">2D 图像</button>
-        <button class="tab" data-mode="3d">3D 曲面</button>
+    <div class="tabs" role="tablist" aria-label="绘图维度">
+        <button class="tab active" data-mode="2d" role="tab" aria-selected="true">2D 图像</button>
+        <button class="tab" data-mode="3d" role="tab" aria-selected="false">3D 曲面</button>
     </div>
 
     <div class="layout">
         <!-- 左侧：输入与分析 -->
-        <div>
+        <div class="control-column">
             <div class="panel">
                 <h2>函数输入</h2>
 
-                <div id="view-switch" class="view-row">
-                    <button class="view-btn active" data-view="explicit" title="y = f(x)，可用 ; 分隔多个函数">显函数</button>
-                    <button class="view-btn" data-view="parametric" title="x(t), y(t)">参数方程</button>
-                    <button class="view-btn" data-view="polar" title="r = r(θ)">极坐标</button>
-                    <button class="view-btn" data-view="implicit" title="f(x,y) = 0">隐函数</button>
+                <div id="view-switch" class="view-row" role="tablist" aria-label="二维绘图模式">
+                    <button class="view-btn active" data-view="explicit" role="tab" aria-selected="true" title="y = f(x)，可用 ; 分隔多个函数">显函数</button>
+                    <button class="view-btn" data-view="parametric" role="tab" aria-selected="false" title="x(t), y(t)">参数方程</button>
+                    <button class="view-btn" data-view="polar" role="tab" aria-selected="false" title="r = r(θ)">极坐标</button>
+                    <button class="view-btn" data-view="implicit" role="tab" aria-selected="false" title="f(x,y) = 0">隐函数</button>
                 </div>
 
                 <div id="panel-explicit">
                     <div class="field">
                         <label for="function-expr">y = f(x)，多个函数用 ; 分隔（可求交点）</label>
-                        <input type="text" id="function-expr" value="sin(x)" placeholder="例如 sin(x) + x^2/4 ; x/2" spellcheck="false">
+                        <input type="text" id="function-expr" value="sin(x)" aria-label="函数表达式" placeholder="例如 sin(x) + x^2/4 ; x/2" spellcheck="false">
                     </div>
                     <div id="param-sliders" class="param-sliders"></div>
                 </div>
@@ -199,15 +218,15 @@
                 <div class="field">
                     <label id="range-label-x">x 范围</label>
                     <div class="range-row">
-                        <input type="text" id="x-min" value="-10">
-                        <input type="text" id="x-max" value="10">
+                        <input type="text" id="x-min" value="-10" aria-label="x 最小值">
+                        <input type="text" id="x-max" value="10" aria-label="x 最大值">
                     </div>
                 </div>
                 <div class="field">
                     <label id="range-label-y">y 范围</label>
                     <div class="range-row">
-                        <input type="text" id="y-min" value="-5">
-                        <input type="text" id="y-max" value="5">
+                        <input type="text" id="y-min" value="-5" aria-label="y 最小值">
+                        <input type="text" id="y-max" value="5" aria-label="y 最大值">
                     </div>
                 </div>
 
@@ -270,9 +289,13 @@
         </div>
 
         <!-- 右侧：图像 + 数据 + 助手 -->
-        <div>
+        <div class="workspace-column">
             <div class="panel graph-wrapper">
-                <div id="graph-container" class="graph-container"></div>
+                <div class="graph-toolbar">
+                    <div class="graph-label"><span class="live-dot" aria-hidden="true"></span>交互式函数图像</div>
+                    <div class="graph-hint">滚轮缩放 · 拖动平移 · 工具栏导出 PNG</div>
+                </div>
+                <div id="graph-container" class="graph-container" role="img" aria-label="函数图像"></div>
                 <div id="story-caption" class="story-caption"></div>
                 <div id="loading-indicator">
                     <div class="loading-spinner"></div>
@@ -307,7 +330,7 @@
                 </div>
                 <div class="chat-box" id="chat-messages"></div>
                 <div class="chat-input-row">
-                    <input type="text" id="chat-input" placeholder="输入表达式绘图，或提问：积分从 0 到 2 / 求导 / 零点…" spellcheck="false">
+                    <input type="text" id="chat-input" aria-label="向助手提问" placeholder="输入表达式绘图，或提问：积分从 0 到 2 / 求导 / 零点…" spellcheck="false">
                     <button class="btn" id="send-btn">发送</button>
                 </div>
                 <div id="perf-info">就绪</div>
