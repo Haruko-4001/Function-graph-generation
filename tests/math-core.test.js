@@ -246,6 +246,63 @@ test('综合分析 x^2 - 4', () => {
     assert(r.monotonic.length === 2, '应有两段单调区间');
 });
 
+/* ---------------- 报告边界（值域 / 断点 / 渐近线） ---------------- */
+console.log('\n[报告边界：值域与断点]');
+
+test('水平渐近线近零归零（1/x 应给 y = 0 而非 1e-8）', () => {
+    const eb = MathCore.detectEndBehavior(MathCore.makeFunction('1/x'));
+    assert(eb.horizontal.length === 2, '应有两个方向的水平渐近线');
+    eb.horizontal.forEach((h) => assert(h.y === 0, '水平渐近线应为 0，实际 ' + h.y));
+});
+
+test('1/x 的值域标记为无界，且极点在未定义点列表中', () => {
+    const r = MathCore.analyzeFunction('1/x', { xMin: -10, xMax: 10 });
+    assert(r.range && r.range.bounded === false, '存在极点时应标记 bounded=false');
+    assert(r.undefinedPoints.length === 1, '应有一个未定义点');
+    near(r.undefinedPoints[0], 0, 1e-6);
+    // 极点邻域被剔除后，不应再出现 ±80 这种爆炸值
+    assert(Math.abs(r.range.max) < 30, '值域上限不应被极点污染，实际 ' + r.range.max);
+});
+
+test('无极点函数的值域标记为有界', () => {
+    const r = MathCore.analyzeFunction('x^2 - 4', { xMin: -10, xMax: 10 });
+    assert(r.range.bounded === true);
+    assert(r.undefinedPoints.length === 0);
+});
+
+test('全区间不可求值时奇偶性不误判为偶函数', () => {
+    assert(MathCore.parity('sqrt(-1 - x^2)', -10, 10) === 'none');
+});
+
+test('全区间不可求值时值域为 null', () => {
+    const r = MathCore.analyzeFunction('sqrt(-1 - x^2)', { xMin: -10, xMax: 10 });
+    assert(r.range === null, '值域应为 null');
+    assert(r.definedRatio === 0, '可求值率应为 0');
+});
+
+test('x 范围非法时抛出中文错误', () => {
+    let msg = '';
+    try { MathCore.analyzeFunction('x', { xMin: 5, xMax: 1 }); } catch (e) { msg = e.message; }
+    assert(msg.indexOf('x 范围无效') === 0, '错误信息不正确: ' + msg);
+});
+
+/* ---------------- 表达式规范化选项 ---------------- */
+console.log('\n[规范化选项 stripPrefix]');
+
+test('默认剥离 y= 前缀', () => {
+    assert(MathCore.normalizeExpression('y = x^2') === 'x^2');
+});
+
+test('stripPrefix:false 时保留等号（隐函数场景）', () => {
+    assert(MathCore.normalizeExpression('y=x^2', { stripPrefix: false }) === 'y=x^2');
+    assert(MathCore.normalizeExpression('x^2+y^2=9', { stripPrefix: false }) === 'x^2+y^2=9');
+});
+
+test('stripPrefix:false 仍然规范化全角符号', () => {
+    const s = MathCore.normalizeExpression('x＾2＋y＾2＝9', { stripPrefix: false });
+    assert(s === 'x^2+y^2=9', '全角规范化失败: ' + s);
+});
+
 /* ---------------- 汇总 ---------------- */
 console.log('\n========================================');
 console.log('通过 ' + passed + ' / ' + (passed + failed));

@@ -18,7 +18,14 @@
 (function (root) {
     'use strict';
 
-    const MathCore = root.MathCore;
+    // 浏览器下由 index.html 先加载 math-core.js；Node 下（单元测试）自动 require，
+    // 使本文件与 math-core 一样具备双端可运行能力。
+    const MathCore = root.MathCore || (function () {
+        if (typeof require !== 'function') return null;
+        try { return require('./math-core.js'); } catch (e) { return null; }
+    }());
+
+    if (!MathCore) throw new Error('assistant.js 依赖 math-core.js，请先加载');
 
     /** 把数字格式化为易读文本 */
     function n(v, digits) {
@@ -27,10 +34,42 @@
         return MathCore.fmt(v, digits === undefined ? 6 : digits);
     }
 
-    /** 从文本中提取第一个数字（支持负数、小数、pi、e 的简单形式） */
-    function parseNumber(text) {
-        const m = text.match(/-?\d+(\.\d+)?/);
-        return m ? parseFloat(m[0]) : null;
+    /* ---------------------------------------------------------------
+     * 积分限解析
+     *
+     * 数字片段支持：3、3.14、.5、-1、pi、-pi、2pi、e、-e
+     * 之前用 \d+ 起头，导致「pi」单独出现时整条正则失配、静默退化成
+     * 整个可视区间——界面上看不出错，答案却是错的。
+     * --------------------------------------------------------------- */
+
+    /** 单个数字片段的正则源码（恰好一个捕获组） */
+    const NUM = '(-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)\\s*(?:pi|e)?|-?(?:pi|e))';
+
+    /** 「从 a 到 b」，最明确的写法 */
+    const RE_LIMIT_FROM = new RegExp('从\\s*' + NUM + '\\s*到\\s*' + NUM, 'i');
+    /** 「[a, b]」 */
+    const RE_LIMIT_BRACKET = new RegExp('\\[\\s*' + NUM + '\\s*[,，]\\s*' + NUM + '\\s*\\]', 'i');
+    /** 「a 到 b」 */
+    const RE_LIMIT_TO = new RegExp(NUM + '\\s*到\\s*' + NUM, 'i');
+
+    /**
+     * 解析一个数字片段为数值。
+     * 支持 3.14 / .5 / -1 / pi / -pi / 2pi / e / -e；无法解析返回 null。
+     */
+    function parseConst(text) {
+        const s = String(text === undefined || text === null ? '' : text).replace(/\s+/g, '');
+        if (!s) return null;
+        if (/pi/i.test(s)) {
+            const m = s.match(/-?(?:\d+(?:\.\d+)?|\.\d+)/);
+            if (m) {
+                const k = parseFloat(m[0]);
+                return Number.isFinite(k) ? k * Math.PI : null;
+            }
+            return /^-/.test(s) ? -Math.PI : Math.PI;
+        }
+        if (/^[-+]?e$/i.test(s)) return /^-/.test(s) ? -Math.E : Math.E;
+        const v = parseFloat(s);
+        return Number.isFinite(v) ? v : null;
     }
 
     class MathAssistant {
@@ -160,20 +199,17 @@
         answerIntegral(t) {
             const expr = this._currentExpr();
             const range = this.ctx.getRange();
-            let a = null, b = null;
+            const lim = this._parseLimits(t);
 
-            // 匹配 "从 a 到 b" / "[a,b]" / "a到b"
-            let m = t.match(/从\s*(-?\d+\.?\d*(?:pi|e)?)\s*到\s*(-?\d+\.?\d*(?:pi|e)?)/);
-            if (!m) m = t.match(/\[(-?\d+\.?\d*)\s*[,，]\s*(-?\d+\.?\d*)\]/);
-            if (!m) m = t.match(/(-?\d+\.?\d*)\s*到\s*(-?\d+\.?\d*)/);
-            if (m) {
-                a = this._parseConst(m[1]);
-                b = this._parseConst(m[2]);
+            let a, b, note = null;
+            if (lim.explicit) {
+                a = lim.a;
+                b = lim.b;
             } else {
-                a = range.xMin; b = range.xMax;
-            }
-            if (a === null || b === null) {
-                return '未能识别积分上下限，请写成「积分从 a 到 b」的形式（a、b 可为数字或 pi）。';
+                a = range.xMin;
+                b = range.xMax;
+                note = '未识别到积分限，已按当前 x 范围计算。如需指定，请写成「积分从 a 到 b」'
+                     + '（a、b 可为 3.14、2pi、pi、e）。';
             }
 
             const res = MathCore.adaptiveSimpson(expr, a, b, 1e-9, 22);
@@ -182,6 +218,7 @@
                 '步骤 1：采用自适应 Simpson 复合求积，自动在变化剧烈区域加密剖分',
                 '步骤 2：通过 Richardson 外推估计误差，迭代至误差 < 1e-9'
             ];
+            if (note) steps.push('提示：' + note);
             if (res.converged || Number.isFinite(res.value)) {
                 steps.push('结果：≈ ' + n(res.value, 10));
                 steps.push('误差估计：≤ ' + MathCore.fmt(res.error, 3) + '（共求值 ' + res.evaluations + ' 次）');
@@ -192,14 +229,21 @@
             return steps.join('\n');
         }
 
-        _parseConst(text) {
-            if (/pi/i.test(text)) {
-                const m = text.match(/(-?\d+\.?\d*)/);
-                return (m ? parseFloat(m[1]) : 1) * Math.PI;
+        /**
+         * 解析积分上下限。
+         * @returns {{a:number|null, b:number|null, explicit:boolean}}
+         *          explicit=false 表示文本中未出现上下限，调用方应回退到可视区间并提示用户。
+         */
+        _parseLimits(text) {
+            const patterns = [RE_LIMIT_FROM, RE_LIMIT_BRACKET, RE_LIMIT_TO];
+            for (let i = 0; i < patterns.length; i++) {
+                const m = text.match(patterns[i]);
+                if (!m) continue;
+                const a = parseConst(m[1]);
+                const b = parseConst(m[2]);
+                if (a !== null && b !== null) return { a, b, explicit: true };
             }
-            if (/e/i.test(text) && !/\d/.test(text.replace(/e/i, ''))) return Math.E;
-            const v = parseFloat(text);
-            return Number.isFinite(v) ? v : null;
+            return { a: null, b: null, explicit: false };
         }
 
         answerRoots() {
@@ -227,9 +271,11 @@
             const expr = this._currentExpr();
             let point = 0;
             let pointText = '0';
-            if (/无穷|∞|Infinity/i.test(t)) {
-                point = /负|-/.test(t.split(/无穷|∞|Infinity/i)[0].slice(-3)) || /-\s*∞|负无穷/.test(t) ? -Infinity : Infinity;
-                pointText = point === Infinity ? '+∞' : '-∞';
+            if (/无穷|∞|infinity/i.test(t)) {
+                // 仅当「负 / -」紧邻无穷时才算负无穷，避免把 "x -> ∞" 的箭头误判成负号
+                const negative = /(负\s*(?:无穷|∞)|-\s*(?:∞|无穷|infinity))/i.test(t);
+                point = negative ? -Infinity : Infinity;
+                pointText = negative ? '-∞' : '+∞';
             } else {
                 const m = t.match(/(?:趋近[于向]?|趋于|->|→)\s*(-?\d+\.?\d*)/);
                 if (m) { point = parseFloat(m[1]); pointText = m[1]; }
@@ -353,13 +399,16 @@
                 }
                 case 'range': {
                     if (!report.range) return '当前区间内函数无可求值点。';
-                    return '【值域（采样区间内）】[' + n(report.range.min, 8) + ', ' + n(report.range.max, 8) + ']';
+                    const tail = report.range.bounded === false
+                        ? '（区间内存在极点，实际值域可能无界）' : '';
+                    return '【值域（区间采样）】≈[' + n(report.range.min, 8) + ', ' + n(report.range.max, 8) + ']' + tail;
                 }
                 case 'domain': {
                     const lines = ['【定义域】' + report.expression];
                     lines.push('采样区间 [' + n(report.xRange[0]) + ', ' + n(report.xRange[1]) + '] 内可求值比例：' + MathCore.fmt(report.definedRatio * 100, 4) + '%');
-                    if (report.domainBreaks.length) {
-                        lines.push('疑似未定义点：' + report.domainBreaks.map((x) => 'x ≈ ' + n(x, 6)).join('，'));
+                    const pts = report.undefinedPoints || report.domainBreaks;
+                    if (pts.length) {
+                        lines.push('未定义点（含极点）：' + pts.map((x) => 'x ≈ ' + n(x, 6)).join('，'));
                     } else {
                         lines.push('未发现未定义点。');
                     }
@@ -374,7 +423,7 @@
                 '我可以帮你做这些事：',
                 '· 绘图：直接发表达式，如「y = x^2 - 4」「画 sin(x)」',
                 '· 求导：「导数」「二阶导数」',
-                '· 积分：「积分从 0 到 3.14」',
+                '· 积分：「积分从 0 到 2pi」「积分从 0 到 3.14」',
                 '· 求根：「零点」「解方程」',
                 '· 极限：「x 趋近于 0 的极限」「x->无穷 的极限」',
                 '· 泰勒：「在 x=0 处 4 阶泰勒展开」',
@@ -383,6 +432,9 @@
             ].join('\n');
         }
     }
+
+    // 便于单元测试直接验证数字片段解析
+    MathAssistant.parseConst = parseConst;
 
     root.MathAssistant = MathAssistant;
 }(typeof self !== 'undefined' ? self : this));

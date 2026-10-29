@@ -25,25 +25,41 @@
     const CHUNK = 4000;
 
     /**
+     * 下一帧回调。
+     * 标签页切到后台时 requestAnimationFrame 会被浏览器暂停，
+     * 若只用 rAF，分块任务会永久挂起、界面一直停在「正在计算」。故加 setTimeout 兜底。
+     */
+    function nextFrame(fn) {
+        const hidden = typeof document !== 'undefined' && document.hidden;
+        if (!hidden && typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(fn);
+        } else {
+            setTimeout(fn, 0);
+        }
+    }
+
+    /**
      * 分块异步执行循环体，避免长时间阻塞主线程。
      * @param {number} total 总迭代次数
      * @param {(i:number)=>void} body 单次迭代
-     * @returns {Promise<void>}
+     * @param {()=>boolean} [isStale] 返回 true 时提前中止（有更新的绘图请求）
+     * @returns {Promise<boolean>} true=跑完，false=被中止
      */
-    function chunked(total, body) {
+    function chunked(total, body, isStale) {
         return new Promise((resolve, reject) => {
             let i = 0;
             function step() {
                 try {
+                    if (isStale && isStale()) { resolve(false); return; }
                     const end = Math.min(i + CHUNK, total);
                     for (; i < end; i++) body(i);
-                    if (i < total) requestAnimationFrame(step);
-                    else resolve();
+                    if (i < total) nextFrame(step);
+                    else resolve(true);
                 } catch (e) {
                     reject(e);
                 }
             }
-            requestAnimationFrame(step);
+            nextFrame(step);
         });
     }
 
@@ -59,6 +75,20 @@
             this.lastTraces = [];
             this.lastSamples = null;   // 供数值表 / CSV 导出使用
             this.lastMeta = null;
+            this._runId = 0;           // 绘图请求序号，用于丢弃过期结果
+        }
+
+        /**
+         * 开启一次绘图请求。快速连续改表达式时，旧请求可能算完得更晚，
+         * 若不加序号会把新图覆盖掉（表现为「画的是上一个函数」）。
+         */
+        _begin() {
+            return ++this._runId;
+        }
+
+        /** 该请求是否已被更新的请求取代 */
+        _isStale(rid) {
+            return this._runId !== rid;
         }
 
         /* ---------------- 布局 ---------------- */
@@ -109,6 +139,7 @@
          * @param {number} yMax
          */
         async plotExplicit(expressions, xMin, xMax, yMin, yMax) {
+            const rid = this._begin();
             const traces = [];
             const samplesOut = [];
             const n = 1600;
@@ -120,7 +151,7 @@
                 const xArr = new Array(n);
                 const yArr = new Array(n);
 
-                await chunked(n, (i) => {
+                const finished = await chunked(n, (i) => {
                     const y = f(xs[i]);
                     if (Number.isFinite(y) && Math.abs(y) < 1e8) {
                         xArr[i] = xs[i];
@@ -129,7 +160,8 @@
                         xArr[i] = xs[i];
                         yArr[i] = null; // 断点处断开线条
                     }
-                });
+                }, () => this._isStale(rid));
+                if (!finished) return null;
 
                 traces.push({
                     x: xArr,
@@ -162,6 +194,7 @@
             layout.xaxis = this._axis2D('x', [xMin, xMax], 'rgba(255,255,255,.12)');
             layout.yaxis = this._axis2D('y', [yMin, yMax], 'rgba(255,255,255,.12)');
 
+            if (this._isStale(rid)) return null;
             this.lastSamples = { kind: 'explicit', series: samplesOut };
             await this._render(traces, layout, { mode: 'explicit', expressions });
             return samplesOut;
@@ -170,13 +203,14 @@
         /* ---------------- 参数方程 ---------------- */
 
         async plotParametric(exprX, exprY, tMin, tMax, xView, yView) {
+            const rid = this._begin();
             const fx = MathCore.makeFunction(exprX, ['t']);
             const fy = MathCore.makeFunction(exprY, ['t']);
             const n = 2000;
             const ts = MathCore.linspace(tMin, tMax, n);
             const xArr = new Array(n), yArr = new Array(n);
 
-            await chunked(n, (i) => {
+            const finished = await chunked(n, (i) => {
                 const px = fx(ts[i]);
                 const py = fy(ts[i]);
                 if (Number.isFinite(px) && Number.isFinite(py) && Math.abs(px) < 1e8 && Math.abs(py) < 1e8) {
@@ -184,7 +218,8 @@
                 } else {
                     xArr[i] = null; yArr[i] = null;
                 }
-            });
+            }, () => this._isStale(rid));
+            if (!finished) return null;
 
             const traces = [{
                 x: xArr, y: yArr,
@@ -197,19 +232,22 @@
             layout.xaxis = this._axis2D('x', xView, 'rgba(255,255,255,.12)');
             layout.yaxis = this._axis2D('y', yView, 'rgba(255,255,255,.12)');
 
-            this.lastSamples = { kind: 'parametric', t: ts, x: xArr, y: yArr };
+            if (this._isStale(rid)) return null;
+            this.lastSamples = { kind: 'parametric', t: ts, x: xArr, y: yArr, expressions: [exprX, exprY] };
             await this._render(traces, layout, { mode: 'parametric' });
+            return true;
         }
 
         /* ---------------- 极坐标 r = r(θ) ---------------- */
 
         async plotPolar(exprR, tMin, tMax, view) {
+            const rid = this._begin();
             const fr = MathCore.makeFunction(exprR, ['theta']);
             const n = 2400;
             const ts = MathCore.linspace(tMin, tMax, n);
             const xArr = new Array(n), yArr = new Array(n);
 
-            await chunked(n, (i) => {
+            const finished = await chunked(n, (i) => {
                 const r = fr(ts[i]);
                 if (Number.isFinite(r) && Math.abs(r) < 1e6) {
                     xArr[i] = r * Math.cos(ts[i]);
@@ -217,7 +255,8 @@
                 } else {
                     xArr[i] = null; yArr[i] = null;
                 }
-            });
+            }, () => this._isStale(rid));
+            if (!finished) return null;
 
             const traces = [{
                 x: xArr, y: yArr,
@@ -231,8 +270,10 @@
             layout.yaxis = this._axis2D('y', view, 'rgba(255,255,255,.12)');
             layout.yaxis.scaleanchor = 'x';
 
-            this.lastSamples = { kind: 'polar', theta: ts, x: xArr, y: yArr };
+            if (this._isStale(rid)) return null;
+            this.lastSamples = { kind: 'polar', theta: ts, x: xArr, y: yArr, expression: exprR };
             await this._render(traces, layout, { mode: 'polar' });
+            return true;
         }
 
         /* ---------------- 隐函数 f(x,y) = 0 ---------------- */
@@ -297,6 +338,7 @@
         }
 
         async plotImplicit(expr, xMin, xMax, yMin, yMax) {
+            const rid = this._begin();
             // 允许用户输入 "x^2 + y^2 = 9" 形式，转换为 f(x,y) = 0
             let body = expr;
             const eq = expr.indexOf('=');
@@ -311,12 +353,15 @@
             const grid = new Array(nx);
             for (let i = 0; i < nx; i++) grid[i] = new Array(ny);
 
-            await chunked(nx * ny, (k) => {
+            const finished = await chunked(nx * ny, (k) => {
                 const i = Math.floor(k / ny), j = k % ny;
                 grid[i][j] = f(xs[i], ys[j]);
-            });
+            }, () => this._isStale(rid));
+            if (!finished) return null;
 
             const segments = this._marchingSquares(grid, xs, ys);
+
+            if (this._isStale(rid)) return null;
 
             const xArr = [], yArr = [];
             for (const s of segments) {
@@ -336,7 +381,7 @@
             layout.yaxis = this._axis2D('y', [yMin, yMax], 'rgba(255,255,255,.12)');
             layout.yaxis.scaleanchor = 'x';
 
-            this.lastSamples = { kind: 'implicit', segments: segments.length };
+            this.lastSamples = { kind: 'implicit', segments: segments.length, expression: expr };
             await this._render(traces, layout, { mode: 'implicit', expression: expr });
             return segments.length;
         }
@@ -344,6 +389,7 @@
         /* ---------------- 3D 曲面 z = f(x,y) ---------------- */
 
         async plotSurface(expr, xMin, xMax, yMin, yMax) {
+            const rid = this._begin();
             const f = MathCore.makeFunction(expr, ['x', 'y']);
             const n = 80;
             const xs = MathCore.linspace(xMin, xMax, n);
@@ -351,11 +397,12 @@
             const zs = new Array(n);
             for (let i = 0; i < n; i++) zs[i] = new Array(n);
 
-            await chunked(n * n, (k) => {
+            const finished = await chunked(n * n, (k) => {
                 const i = Math.floor(k / n), j = k % n;
                 const z = f(xs[i], ys[j]);
                 zs[i][j] = Number.isFinite(z) && Math.abs(z) < 1e6 ? z : null;
-            });
+            }, () => this._isStale(rid));
+            if (!finished) return null;
 
             const traces = [{
                 x: xs, y: ys, z: zs,
@@ -375,12 +422,15 @@
                 zaxis: { title: 'z', gridcolor: 'rgba(255,255,255,.15)' }
             };
 
-            this.lastSamples = { kind: 'surface', x: xs, y: ys, z: zs };
+            if (this._isStale(rid)) return null;
+            this.lastSamples = { kind: 'surface', x: xs, y: ys, z: zs, expression: expr };
             await this._render(traces, layout, { mode: 'surface', expression: expr });
+            return true;
         }
 
         /** 清空画布 */
         clear() {
+            this._runId++; // 让仍在计算的绘图任务作废，避免清空后又被画回来
             if (typeof Plotly !== 'undefined') {
                 Plotly.purge(this.containerId);
             }

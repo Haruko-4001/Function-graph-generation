@@ -63,9 +63,15 @@
     /**
      * 规范化表达式：兼容中文输入法与常见手写习惯。
      * 例如：×→*、÷→/、（）→()、π→pi、√x→sqrt(x)
+     *
+     * @param {string} raw 原始输入
+     * @param {{stripPrefix?: boolean}} [opts]
+     *        stripPrefix 默认 true：把「y =」「f(x) =」前缀去掉。
+     *        隐函数等需要保留等号的场景传 false。
      */
-    function normalizeExpression(raw) {
+    function normalizeExpression(raw, opts) {
         if (typeof raw !== 'string') return '';
+        const stripPrefix = !opts || opts.stripPrefix !== false;
         let s = raw.trim();
         if (!s) return '';
         s = s
@@ -78,6 +84,7 @@
             .replace(/√\s*\(/g, 'sqrt(')
             .replace(/√\s*([a-zA-Z0-9])/g, 'sqrt($1)')
             .replace(/\bln\s*\(/g, 'log(');
+        if (!stripPrefix) return s;
         // 去掉 y= / f(x)= 前缀
         const eq = s.indexOf('=');
         if (eq > 0 && !/[<>!]=/.test(s.slice(Math.max(0, eq - 1), eq + 1))) {
@@ -469,7 +476,7 @@
                 continue;
             }
             if (sign !== 0 && sign !== curSign) {
-                // 二阶导变号：在前后两点间用二分法精化拐点
+                // 二阶导变号：在前后两点间用 Brent 法精化拐点
                 const xInf = brent(function (t) { return secondDerivative(f, t); }, xs[i - 1], xs[i], 1e-10);
                 if (Number.isFinite(xInf)) {
                     intervals.push({ from: start, to: xInf, dir: curSign });
@@ -580,7 +587,12 @@
     /**
      * 检测水平与斜渐近线。
      * 返回 { horizontal: [{y, side}], oblique: [{m, c, side}] }
+     *
+     * 说明：极限在无穷远处只能用有限大数近似，截断误差会让 y = 0 的渐近线
+     * 显示成 y ≈ 1e-8。这里对近零结果做归零，避免误导。
      */
+    const H_LIMIT_ZERO = 1e-7;
+
     function detectEndBehavior(f) {
         const horizontal = [];
         const oblique = [];
@@ -589,7 +601,7 @@
             const label = sign > 0 ? '+∞' : '-∞';
             const L = limitAtInfinity(f, sign);
             if (L !== null) {
-                horizontal.push({ y: L, side: label });
+                horizontal.push({ y: Math.abs(L) < H_LIMIT_ZERO ? 0 : L, side: label });
                 continue;
             }
             // 斜渐近线：m = f(x)/x, c = f(x) - m*x
@@ -771,9 +783,9 @@
             if (k > 0) factorial *= k;
             let val;
             try {
-                val = toRealNumber(compile(derivExpr).evaluate(
-                    variable === 'x' ? { x: a } : (function () { const s = {}; s[variable] = a; return s; }())
-                ));
+                const scope = {};
+                scope[variable] = a;
+                val = toRealNumber(compile(derivExpr).evaluate(scope));
             } catch (e) {
                 return { error: '第 ' + k + ' 阶导数在 x = ' + fmt(a) + ' 处不可求值', coefficients: null };
             }
@@ -798,7 +810,6 @@
             }
         }
 
-        const scopeVar = variable;
         return {
             coefficients,
             point: a,
@@ -835,15 +846,18 @@
         if (typeof f === 'string') f = makeFunction(f, ['x']);
         const m = Math.min(Math.abs(a), Math.abs(b));
         if (m === 0) return 'none';
-        let even = true, odd = true;
+        let even = true, odd = true, valid = 0;
         for (let i = 1; i <= 30; i++) {
             const x = -m + 2 * m * i / 31;
             const f1 = f(x), f2 = f(-x);
             if (!Number.isFinite(f1) || !Number.isFinite(f2)) { continue; }
+            valid++;
             const scale = Math.max(1, Math.abs(f1), Math.abs(f2));
             if (Math.abs(f1 - f2) > 1e-6 * scale) even = false;
             if (Math.abs(f1 + f2) > 1e-6 * scale) odd = false;
         }
+        // 全区间都不可求值时不能默认判成偶函数
+        if (valid === 0) return 'none';
         return even ? 'even' : (odd ? 'odd' : 'none');
     }
 
@@ -883,6 +897,18 @@
      * 综合分析
      * --------------------------------------------------------------- */
 
+    /** 合并两组断点并去重排序 */
+    function unionSorted(a, b) {
+        const all = (a || []).concat(b || [])
+            .filter((v) => Number.isFinite(v))
+            .sort((p, q) => p - q);
+        const out = [];
+        for (const v of all) {
+            if (!out.length || Math.abs(v - out[out.length - 1]) > 1e-9) out.push(v);
+        }
+        return out;
+    }
+
     /**
      * 对 y = f(x) 做全面性质分析。
      * 返回结构化报告（全部数值，展示层负责格式化）。
@@ -893,24 +919,40 @@
         const xMax = opts.xMax !== undefined ? opts.xMax : 10;
         const samples = opts.samples || 800;
 
+        if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMax <= xMin) {
+            throw new Error('x 范围无效：最大值必须大于最小值');
+        }
+
         const f = makeFunction(expr, ['x']);
         const xs = linspace(xMin, xMax, samples);
         const ys = xs.map(f);
 
-        let rMin = Infinity, rMax = -Infinity, finiteCount = 0;
-        for (const v of ys) {
-            if (Number.isFinite(v)) {
-                finiteCount++;
-                if (v < rMin) rMin = v;
-                if (v > rMax) rMax = v;
+        // 先定位极点与断点：值域要据此剔除极点邻域的爆炸值
+        // （否则 1/x 会报出 [-80, 80] 这种并非值域的数字）
+        const { vertical, domainBreaks } = detectVerticalAsymptotes(f, xMin, xMax, samples);
+        const undefinedPoints = unionSorted(vertical, domainBreaks);
+        const step = (xMax - xMin) / Math.max(1, samples - 1);
+        const guard = step * 2;
+
+        let rMin = Infinity, rMax = -Infinity, finiteCount = 0, counted = 0;
+        for (let i = 0; i < xs.length; i++) {
+            const v = ys[i];
+            if (!Number.isFinite(v)) continue;
+            finiteCount++;
+            let nearBreak = false;
+            for (const bx of undefinedPoints) {
+                if (Math.abs(xs[i] - bx) <= guard) { nearBreak = true; break; }
             }
+            if (nearBreak) continue;
+            counted++;
+            if (v < rMin) rMin = v;
+            if (v > rMax) rMax = v;
         }
 
-        const { vertical, domainBreaks } = detectVerticalAsymptotes(f, xMin, xMax, samples);
         const zeros = findZeros(f, xMin, xMax);
         const extrema = findExtrema(f, xMin, xMax);
         const critXs = extrema.maxima.map((p) => p.x).concat(extrema.minima.map((p) => p.x));
-        const monotonic = monotonicIntervals(f, xMin, xMax, critXs, vertical.concat(domainBreaks));
+        const monotonic = monotonicIntervals(f, xMin, xMax, critXs, undefinedPoints);
         const conc = concavity(f, xMin, xMax);
         const endBehavior = detectEndBehavior(f);
         const par = parity(f, xMin, xMax);
@@ -920,7 +962,8 @@
             expression: expr,
             xRange: [xMin, xMax],
             definedRatio: finiteCount / samples,
-            range: finiteCount ? { min: rMin, max: rMax } : null,
+            // bounded === false 表示区间内存在极点，实际值域可能无界
+            range: counted ? { min: rMin, max: rMax, bounded: undefinedPoints.length === 0 } : null,
             zeros: zeros.map((x) => ({ x, y: f(x) })),
             extrema,
             monotonic,
@@ -932,6 +975,7 @@
                 oblique: endBehavior.oblique
             },
             domainBreaks,
+            undefinedPoints,
             parity: par,
             period: periodInfo.period,
             constant: periodInfo.constant

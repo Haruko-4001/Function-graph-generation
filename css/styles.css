@@ -130,6 +130,7 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 #properties-panel { font-size: .87rem; line-height: 1.7; max-height: 340px; overflow-y: auto; }
 #properties-panel .prop { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px dashed rgba(255, 255, 255, .1); }
 #properties-panel .prop .k { color: var(--accent); min-width: 76px; flex-shrink: 0; }
+#properties-panel .prop-note { margin: 10px 0 0; font-size: 11px; line-height: 1.6; opacity: .55; }
 #properties-panel .empty, .empty { opacity: .6; }
 
 /* ---------- 数值表 ---------- */

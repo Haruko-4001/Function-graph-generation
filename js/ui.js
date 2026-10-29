@@ -18,13 +18,14 @@
     function readRange() {
         const nums = {};
         const map = { xMin: 'x-min', xMax: 'x-max', yMin: 'y-min', yMax: 'y-max' };
+        const label = { xMin: 'x 最小值', xMax: 'x 最大值', yMin: 'y 最小值', yMax: 'y 最大值' };
         for (const k in map) {
             const v = parseFloat(val(map[k]));
-            if (!Number.isFinite(v)) throw new Error('范围输入无效：' + k + ' 必须为数字');
+            if (!Number.isFinite(v)) throw new Error('范围输入无效：' + label[k] + ' 必须为数字');
             nums[k] = v;
         }
-        if (nums.xMin >= nums.xMax) throw new Error('x 的最小值必须小于最大值');
-        if (nums.yMin >= nums.yMax) throw new Error('y 的最小值必须小于最大值');
+        if (nums.xMin >= nums.xMax) throw new Error('x 范围无效：最小值必须小于最大值');
+        if (nums.yMin >= nums.yMax) throw new Error('y 范围无效：最小值必须小于最大值');
         return nums;
     }
 
@@ -37,6 +38,8 @@
             this.report = null;
             this.debounceTimer = null;
             this.isPlotting = false;
+            this.pendingPlot = false;
+            this.pendingManual = false;
             this.lastPlotTime = 0;
             this.autoPlot = true;
 
@@ -190,8 +193,12 @@
                     return [val('param-x'), val('param-y')].map((s) => MathCore.normalizeExpression(s)).filter(Boolean);
                 case 'polar':
                     return [MathCore.normalizeExpression(val('polar-r'))].filter(Boolean);
-                case 'implicit':
-                    return [val('implicit-expr')].map((s) => s.trim()).filter(Boolean);
+                case 'implicit': {
+                    // 隐函数用等号表达，故关闭「y= 前缀剥离」，只做全角/π 等规范化
+                    const raw = val('implicit-expr');
+                    if (!raw.trim()) return [];
+                    return [MathCore.normalizeExpression(raw, { stripPrefix: false })].filter(Boolean);
+                }
             }
             return [];
         }
@@ -225,9 +232,9 @@
                     break;
                 }
                 case 'implicit': {
-                    const body = exprs[0].includes('=')
-                        ? '(' + exprs[0].split('=')[0] + ')-(' + exprs[0].split('=')[1] + ')'
-                        : exprs[0];
+                    const s = exprs[0];
+                    const eq = s.indexOf('=');
+                    const body = eq > 0 ? '(' + s.slice(0, eq) + ')-(' + s.slice(eq + 1) + ')' : s;
                     const r = MathCore.validateExpression(body, ['x', 'y']);
                     if (!r.ok) throw new Error(r.error);
                     break;
@@ -239,7 +246,13 @@
         /* ---------------- 绘图调度 ---------------- */
 
         async plot(manual) {
-            if (this.isPlotting) return;
+            // 正在计算时又来了新请求：记下来，等本轮结束后补一次，
+            // 否则用户连续改表达式时最后一次输入会被丢弃（界面停在旧图）。
+            if (this.isPlotting) {
+                this.pendingPlot = true;
+                this.pendingManual = this.pendingManual || !!manual;
+                return;
+            }
             this.isPlotting = true;
             this.showLoading(true);
             this.showError(null);
@@ -248,28 +261,35 @@
             try {
                 const range = readRange();
                 const exprs = this.validateAll();
+                let ok = true;
 
                 if (this.mode === '3d') {
-                    await this.plotter.plotSurface(exprs[0], range.xMin, range.xMax, range.yMin, range.yMax);
+                    ok = await this.plotter.plotSurface(exprs[0], range.xMin, range.xMax, range.yMin, range.yMax);
                     this.report = null;
-                    this.renderReportUnavailable('3D 曲面模式下暂不提供自动性质分析');
+                    if (ok) this.renderReportUnavailable('3D 曲面模式下暂不提供自动性质分析');
                 } else if (this.view === 'explicit') {
-                    await this.plotter.plotExplicit(exprs, range.xMin, range.xMax, range.yMin, range.yMax);
-                    this.report = MathCore.analyzeFunction(exprs[0], { xMin: range.xMin, xMax: range.xMax });
-                    this.renderReport();
+                    ok = await this.plotter.plotExplicit(exprs, range.xMin, range.xMax, range.yMin, range.yMax);
+                    if (ok) {
+                        this.report = MathCore.analyzeFunction(exprs[0], { xMin: range.xMin, xMax: range.xMax });
+                        this.renderReport();
+                    }
                 } else if (this.view === 'parametric') {
-                    await this.plotter.plotParametric(exprs[0], exprs[1], range.xMin, range.xMax, [range.yMin, range.yMax], [range.yMin, range.yMax]);
+                    ok = await this.plotter.plotParametric(exprs[0], exprs[1], range.xMin, range.xMax, [range.yMin, range.yMax], [range.yMin, range.yMax]);
                     this.report = null;
-                    this.renderReportUnavailable('参数方程模式：性质分析请切换到显函数模式');
+                    if (ok) this.renderReportUnavailable('参数方程模式：性质分析请切换到显函数模式');
                 } else if (this.view === 'polar') {
-                    await this.plotter.plotPolar(exprs[0], range.xMin, range.xMax, [range.yMin, range.yMax]);
+                    ok = await this.plotter.plotPolar(exprs[0], range.xMin, range.xMax, [range.yMin, range.yMax]);
                     this.report = null;
-                    this.renderReportUnavailable('极坐标模式：性质分析请切换到显函数模式');
+                    if (ok) this.renderReportUnavailable('极坐标模式：性质分析请切换到显函数模式');
                 } else if (this.view === 'implicit') {
                     const segCount = await this.plotter.plotImplicit(exprs[0], range.xMin, range.xMax, range.yMin, range.yMax);
+                    ok = segCount !== null;
                     this.report = null;
-                    this.renderReportUnavailable('隐函数模式：共提取 ' + segCount + ' 段等值线');
+                    if (ok) this.renderReportUnavailable('隐函数模式：共提取 ' + segCount + ' 段等值线');
                 }
+
+                // ok === null/false 表示本次结果已被更新的请求取代，不再覆盖后画的图
+                if (!ok) return;
 
                 this.lastPlotTime = performance.now() - start;
                 if (manual) {
@@ -280,6 +300,12 @@
             } finally {
                 this.isPlotting = false;
                 this.showLoading(false);
+                if (this.pendingPlot) {
+                    this.pendingPlot = false;
+                    const rerunManual = this.pendingManual;
+                    this.pendingManual = false;
+                    this.plot(rerunManual);
+                }
             }
         }
 
@@ -312,10 +338,17 @@
             const parityText = { even: '偶函数', odd: '奇函数', none: '非奇非偶' }[r.parity];
             html.push(this._propRow('奇偶性', parityText));
             html.push(this._propRow('周期性', r.constant ? '常函数' : (r.period ? 'T ≈ ' + n(r.period, 8) : '未发现周期')));
-            html.push(this._propRow('值域', r.range ? '[' + n(r.range.min, 8) + ', ' + n(r.range.max, 8) + ']' : '无（区间内不可求值）'));
-            html.push(this._propRow('可求值率', n(r.definedRatio * 100, 4) + '%'));
-            if (r.domainBreaks.length) {
-                html.push(this._propRow('未定义点', r.domainBreaks.map((x) => 'x≈' + n(x, 4)).join('，')));
+
+            // 值域：区间采样极值，非全局值域；存在极点时实际可能无界，用 ⚠ 标出
+            const bounded = r.range ? r.range.bounded !== false : true;
+            html.push(this._propRow('值域（采样）', r.range
+                ? '≈[' + n(r.range.min, 6) + ', ' + n(r.range.max, 6) + ']' + (bounded ? '' : ' ⚠')
+                : '无（区间内不可求值）'));
+            html.push(this._propRow('采样可求值率', n(r.definedRatio * 100, 4) + '%'));
+
+            const undef = r.undefinedPoints || r.domainBreaks || [];
+            if (undef.length) {
+                html.push(this._propRow('未定义点', undef.slice(0, 8).map((x) => 'x≈' + n(x, 6)).join('，') + (undef.length > 8 ? '…' : '')));
             }
 
             // 零点
@@ -352,48 +385,84 @@
             html.push(this._propRow('斜渐近线', a.oblique.length
                 ? a.oblique.map((o) => 'y≈' + n(o.m, 5) + 'x+' + n(o.c, 5) + '(' + o.side + ')').join('，') : '无'));
 
+            const note = '以上为区间内采样与数值迭代结果，非符号推导。';
+            html.push('<p class="prop-note">' + note
+                + (bounded ? '' : '带 ⚠ 的值域含极点，实际可能无界。') + '</p>');
+
             $('properties-panel').innerHTML = html.join('');
         }
 
         /* ---------------- 数值表与导出 ---------------- */
 
+        /**
+         * 把最近一次采样结果归一为 { headers, rows }，供数值表与 CSV 共用。
+         * @param {object} samples plotter.lastSamples
+         * @param {number} limit 最多返回多少行（Infinity 表示全部）
+         */
+        _sampleTable(samples, limit) {
+            if (!samples) return null;
+            const pick = (len) => Math.max(1, Math.ceil(len / limit));
+
+            if (samples.kind === 'explicit') {
+                const series = samples.series || [];
+                if (!series.length) return null;
+                const n = series[0].x.length;
+                const step = pick(n);
+                const headers = ['x'].concat(series.length === 1
+                    ? ['f(x)']
+                    : series.map((s, i) => 'f' + (i + 1) + '(x)'));
+                const rows = [];
+                for (let i = 0; i < n; i += step) {
+                    rows.push([series[0].x[i]].concat(series.map((s) => s.y[i])));
+                }
+                return { headers, rows };
+            }
+            if (samples.kind === 'parametric') {
+                const n = samples.t.length;
+                const step = pick(n);
+                const rows = [];
+                for (let i = 0; i < n; i += step) rows.push([samples.t[i], samples.x[i], samples.y[i]]);
+                return { headers: ['t', 'x(t)', 'y(t)'], rows };
+            }
+            if (samples.kind === 'polar') {
+                const n = samples.theta.length;
+                const step = pick(n);
+                const rows = [];
+                for (let i = 0; i < n; i += step) {
+                    const x = samples.x[i], y = samples.y[i];
+                    const r = (Number.isFinite(x) && Number.isFinite(y)) ? Math.hypot(x, y) : null;
+                    rows.push([samples.theta[i], r, x, y]);
+                }
+                return { headers: ['theta', 'r', 'x', 'y'], rows };
+            }
+            return null;
+        }
+
         renderTable() {
-            const samples = this.plotter.lastSamples;
             const body = $('table-body');
-            if (!samples || samples.kind !== 'explicit') {
-                body.innerHTML = '<tr><td colspan="3" class="empty">请先在显函数模式绘制函数</td></tr>';
+            const table = this._sampleTable(this.plotter.lastSamples, 25);
+            if (!table) {
+                body.innerHTML = '<tr><td colspan="4" class="empty">暂无数据，请先绘制 2D 图形</td></tr>';
                 return;
             }
-            const rows = [];
-            const s = samples.series[0];
-            const count = Math.min(25, s.x.length);
-            const step = Math.max(1, Math.floor(s.x.length / count));
-            for (let i = 0; i < s.x.length; i += step) {
-                const y = s.y[i];
-                rows.push('<tr><td>' + MathCore.fmt(s.x[i], 6) + '</td><td>' +
-                    (y === null ? '—' : MathCore.fmt(y, 8)) + '</td></tr>');
-            }
-            body.innerHTML = '<tr><th>x</th><th>f(x)</th></tr>' + rows.join('');
+            const cell = (v) => (v === null || v === undefined || !Number.isFinite(v) ? '—' : MathCore.fmt(v, 8));
+            const head = '<tr>' + table.headers.map((h) => '<th>' + h + '</th>').join('') + '</tr>';
+            const rows = table.rows.map((r) =>
+                '<tr>' + r.map((v) => '<td>' + cell(v) + '</td>').join('') + '</tr>');
+            body.innerHTML = head + rows.join('');
         }
 
         exportCSV() {
-            const samples = this.plotter.lastSamples;
-            if (!samples || !samples.series) {
-                this.showError('暂无可导出的数据，请先绘制函数');
+            const table = this._sampleTable(this.plotter.lastSamples, Infinity);
+            if (!table) {
+                this.showError('暂无可导出的数据，请先绘制 2D 图形');
                 return;
             }
-            let csv = 'x';
-            samples.series.forEach((s, i) => { csv += ',f' + (i + 1) + '(x)'; });
-            csv += '\n';
-            const len = samples.series[0].x.length;
-            for (let i = 0; i < len; i++) {
-                let line = String(samples.series[0].x[i]);
-                for (const s of samples.series) {
-                    line += ',' + (s.y[i] === null ? '' : s.y[i]);
-                }
-                csv += line + '\n';
-            }
-            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+            const cell = (v) => (v === null || v === undefined || !Number.isFinite(v) ? '' : String(v));
+            const lines = [table.headers.join(',')];
+            for (const r of table.rows) lines.push(r.map(cell).join(','));
+            // \ufeff：让 Excel 正确识别 UTF-8
+            const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'function_data.csv';
