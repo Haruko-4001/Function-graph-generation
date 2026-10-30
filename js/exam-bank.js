@@ -201,6 +201,70 @@
             ],
             note: '斜率之积型轨迹：乘开分母直接得到二次曲线，再对照标准式判断焦点位置。'
         },
+        {
+            id: 'GK-2019-II-20-1',
+            source: '2019 年普通高等学校招生全国统一考试（全国Ⅱ卷·理科）数学 · 第 20 题（1）',
+            kind: '高考真题',
+            topic: '焦点弦与弦长',
+            node: 'G9',
+            difficulty: '中档',
+            prompt: '已知抛物线 <code>C:y<sup>2</sup>=4x</code> 的焦点为 F，过 F 的直线 l 与 C 交于 A、B 两点，且 <code>|AB|=8</code>，求 l 的方程。',
+            answer: '<code>y=x−1</code> 或 <code>y=−x+1</code>',
+            steps: [
+                '设 <code>l:y=k(x−1)</code>，代入 y²=4x 得 <code>k<sup>2</sup>x<sup>2</sup>−(2k<sup>2</sup>+4)x+k<sup>2</sup>=0</code>，判别式 Δ=16(k²+1)。',
+                '<code>|x₁−x₂|=4√(k²+1)/k²</code>，<code>|AB|=|x₁−x₂|√(1+k²)=4(k²+1)/k²</code>。',
+                '由 |AB|=8 得 k²=1。'
+            ],
+            note: '焦点弦长公式 |AB|=(1+k²)·4/k² 是抛物线焦点弦的常用结论。'
+        },
+        {
+            id: 'GK-2018-II-21',
+            source: '2018 年普通高等学校招生全国统一考试（全国Ⅱ卷·理科）数学 · 第 21 题',
+            kind: '高考真题',
+            topic: '不等式证明与唯一零点',
+            node: 'E7',
+            difficulty: '中档',
+            prompt: '已知函数 <code>f(x)=e<sup>x</sup>−a x<sup>2</sup></code>。<br>（1）若 a=1，证明：当 x≥0 时 f(x)≥1；<br>（2）若 f(x) 在 (0,+∞) 只有一个零点，求 a。',
+            answer: '（1）见解答；（2）<code>a=e<sup>2</sup>/4</code>。',
+            steps: [
+                '（1）用 <code>e<sup>x</sup>≥1+x+x<sup>2</sup>/2</code>：当 0≤x≤2 时 1+x+x<sup>2</sup>/2 ≥ 1+x²；当 x≥2 时再加 x³/6 仍成立，故 e<sup>x</sup>−x²≥1。',
+                '（2）零点等价于 <code>a=e<sup>x</sup>/x<sup>2</sup></code>。令 h=e<sup>x</sup>/x<sup>2</sup>，<code>h′=e<sup>x</sup>(x−2)/x<sup>3</sup></code>，最小值 h(2)=e²/4。',
+                '故只有 a=e²/4 时恰有一个零点。'
+            ],
+            note: '分离参数后求 h 的最小值，是“唯一零点”问题的固定动作。'
+        },
+        {
+            id: 'GK-2017-III-21-1',
+            source: '2017 年普通高等学校招生全国统一考试（全国Ⅲ卷·理科）数学 · 第 21 题（1）',
+            kind: '高考真题',
+            topic: '恒成立与参数',
+            node: 'E5',
+            difficulty: '中档',
+            prompt: '已知函数 <code>f(x)=x−1−a ln x</code>（x>0）。若 f(x)≥0，求 a 的值。',
+            answer: 'a = 1',
+            steps: [
+                'f′(x)=1−a/x=(x−a)/x：当 a>0 时，f 在 (0,a) 递减、在 (a,+∞) 递增，最小值 f(a)=a−1−a ln a。',
+                '又 f(1)=0 恒成立，且 x=1 是最小值点，故 f′(1)=0，得 a=1。',
+                '此时 f(x)=x−1−ln x≥0 即 ln x≤x−1，成立。'
+            ],
+            note: '“恒成立”先看等号点：由 f(1)=0 与最小值条件直接锁定参数。'
+        },
+        {
+            id: 'GK-2021-Y-20',
+            source: '2021 年普通高等学校招生全国统一考试（全国乙卷·理科）数学 · 第 20 题',
+            kind: '高考真题',
+            topic: '换元与不等式证明',
+            node: 'E8',
+            difficulty: '压轴',
+            prompt: '设函数 <code>f(x)=ln(a−x)</code>，已知 x=0 是函数 <code>y=x f(x)</code> 的极值点。<br>（1）求 a；<br>（2）设函数 <code>g(x)=(x+f(x))/(x f(x))</code>，证明：g(x)&lt;1。',
+            answer: '（1）a=1；（2）换元 t=1−x 后证 1−t+t ln t&gt;0。',
+            steps: [
+                '（1）F(x)=x ln(a−x)，F′(0)=ln a=0 ⇒ a=1；F″(0)=−2&lt;0，确为极大值点。',
+                '（2）此时 x f(x)&lt;0（x&lt;1 且 x≠0），故 g(x)&lt;1 等价于 x+f(x)&gt;x f(x)，即 x+(1−x)ln(1−x)&gt;0。',
+                '令 t=1−x&gt;0，t≠1，则需证 <code>h(t)=1−t+t ln t&gt;0</code>。h′(t)=ln t，h 在 (0,1) 递减、(1,+∞) 递增，最小值 h(1)=0。'
+            ],
+            note: '分式不等式先定分母符号；换元后只需证一个一元不等式。'
+        },
     ];
 
     return { items };

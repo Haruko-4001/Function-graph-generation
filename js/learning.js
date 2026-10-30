@@ -857,7 +857,7 @@
             const f = Core.makeFunction(expr, ['x']);
             const zeros = Core.findZeros(f, -10, 10, { samples: 1200 }).length;
             out.push({
-                kind: '计算实战', source: '基于本节点示例函数 · ' + expr, difficulty: '基础',
+                kind: '计算实战 · 待换真题', source: '基于本节点示例函数 · ' + expr, difficulty: '基础', real: false,
                 prompt: '求 <code>f(x)=' + esc(expr) + '</code> 在 [−10,10] 上的零点个数。',
                 answer: zeros + ' 个',
                 steps: ['先写定义域，再在区间内找变号点与切触点；每个单调区间至多一个零点。']
@@ -866,13 +866,13 @@
         try {
             const r = Core.analyzeFunction(expr, { xMin: -10, xMax: 10 });
             out.push({
-                kind: '计算实战', source: '基于本节点示例函数 · ' + expr, difficulty: '基础',
+                kind: '计算实战 · 待换真题', source: '基于本节点示例函数 · ' + expr, difficulty: '基础', real: false,
                 prompt: '求 <code>f(x)=' + esc(expr) + '</code> 在 [−10,10] 上的单调区间个数。',
                 answer: r.monotonic.length + ' 个',
                 steps: ['求导 → 解 f′=0 → 按根把定义域分段 → 逐段判断符号。']
             });
             out.push({
-                kind: '计算实战', source: '基于本节点示例函数 · ' + expr, difficulty: '基础',
+                kind: '计算实战 · 待换真题', source: '基于本节点示例函数 · ' + expr, difficulty: '基础', real: false,
                 prompt: '求 <code>f(x)=' + esc(expr) + '</code> 在 [−10,10] 上的极值点个数。',
                 answer: (r.extrema.maxima.length + r.extrema.minima.length) + ' 个',
                 steps: ['解 f′(x)=0，并检查左右是否变号；只有变号点才是极值点。']
@@ -886,7 +886,7 @@
         examBankRaw.forEach((it) => {
             if (mergeLib.target(it.node) !== nodeId) return;
             list.push({
-                kind: it.kind, source: it.source, difficulty: it.difficulty,
+                kind: it.kind, source: it.source, difficulty: it.difficulty, real: true,
                 prompt: it.prompt, answer: it.answer, steps: it.steps
             });
         });
@@ -895,7 +895,7 @@
             if (mergeLib.target(L.nodeId) !== nodeId) return;
             L.sections.forEach((sec) => sec.examples.forEach((ex) => {
                 list.push({
-                    kind: '精讲例题', source: ex.source, difficulty: '同例题',
+                    kind: '精讲例题', source: ex.source, difficulty: '同例题', real: true,
                     prompt: ex.problem, answer: ex.answer, steps: ex.steps
                 });
             }));
@@ -906,13 +906,17 @@
 
     function nodeExamplesHtml(nodeId) {
         const items = nodeExampleItems(nodeId);
-        if (!items.length) return '<p class="learn-empty">这个节点的例题正在补充中。</p>';
-        return '<div class="node-examples">' + items.map((it, i) => {
+        const realCount = items.filter((it) => it.real).length;
+        const cover = '<p class="learn-coverage">真题覆盖 <b>' + realCount + ' / 3</b>'
+            + (realCount >= 3 ? '（已达标）' : '（还差 ' + (3 - realCount) + ' 道真题待补）') + '</p>';
+        if (!items.length) return cover + '<p class="learn-empty">这个节点的例题正在补充中。</p>';
+        return cover + '<div class="node-examples">' + items.map((it, i) => {
             const steps = (it.steps || []).map((x) => '<li>' + x + '</li>').join('');
             return '<article class="node-example">'
                 + '<div class="node-example-head"><span class="tag">例 ' + (i + 1) + '</span>'
                 + '<span class="tag ghost">' + esc(it.kind) + '</span>'
-                + '<span class="tag ghost">' + esc(it.difficulty || '中档') + '</span></div>'
+                + '<span class="tag ghost">' + esc(it.difficulty || '中档') + '</span>'
+                + (it.real ? '' : '<span class="tag ghost pending">待换真题</span>') + '</div>'
                 + '<p class="node-example-source">来源：' + esc(it.source) + '</p>'
                 + '<p class="node-example-problem">' + it.prompt + '</p>'
                 + '<details class="node-example-detail"><summary>查看解析与答案</summary>'
