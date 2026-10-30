@@ -153,10 +153,12 @@ try {
     await send('Page.enable');
     await send('Page.navigate', { url: target });
     await sleep(4000);
-    // 首屏字体与 Plotly 初始化耗时随构建体积变化，轮询等待就绪，避免固定 sleep 误判
-    for (let i = 0; i < 40; i++) {
+    // 首屏字体与 Plotly 初始化耗时随构建体积变化，轮询等待就绪，避免固定 sleep 误判。
+    // learn-ready 由 learning.js 末尾设置，确保所有脚本加载、首屏绘图与学习中心事件绑定均已完成。
+    for (let i = 0; i < 60; i++) {
         const ready = await evaluate(`typeof window.MathCore === 'object'
-            && !!document.querySelector('#graph-container .plotly')`);
+            && !!document.querySelector('#graph-container .plotly')
+            && document.documentElement.classList.contains('learn-ready')`);
         if (ready) break;
         await sleep(500);
     }
@@ -251,9 +253,21 @@ try {
         document.querySelector('[data-node="D2"]').click();
         await new Promise(r => setTimeout(r, 400));
         const lesson1Examples = document.querySelectorAll('.lesson-example').length;
+        document.querySelector('.learn-tab[data-learn-tab="archive"]').click();
+        await new Promise(r => setTimeout(r, 300));
+        const archiveGroups = document.querySelectorAll('#learn-tree .learn-group').length;
+        const archiveSources = document.querySelectorAll('[data-archive]').length;
+        document.querySelector('[data-archive="REF-12"]').click();
+        await new Promise(r => setTimeout(r, 300));
+        const archiveMeta = document.querySelectorAll('.arch-meta-row').length;
+        const archivePolicy = document.querySelectorAll('.arch-policy').length;
+        document.querySelector('.learn-chip[data-chapter]').click();
+        await new Promise(r => setTimeout(r, 300));
+        const archiveBack = document.querySelectorAll('[data-archive-back]').length;
+        const archiveStillTab = (document.querySelector('.learn-tab.active') || {}).textContent || '';
         document.getElementById('learn-close').click();
         await new Promise(r => setTimeout(r, 260));
-        return { groups, title, patterns, options, experiments, expTraces, bookContext, examExamples, examSources, lessonSecs, lesson1Examples, hidden: document.getElementById('learn-overlay').hidden };
+        return { groups, title, patterns, options, experiments, expTraces, bookContext, examExamples, examSources, lessonSecs, lesson1Examples, archiveGroups, archiveSources, archiveMeta, archivePolicy, archiveBack, archiveStillTab, hidden: document.getElementById('learn-overlay').hidden };
     })()`);
     check('知识地图与书目融合/真题样章可用',
         learn.groups === 5 && learn.title.length > 0 && learn.patterns === 71
@@ -261,6 +275,11 @@ try {
         && learn.bookContext > 0 && learn.examExamples === 8 && learn.examSources === 8 && learn.lessonSecs === 4
         && learn.lesson1Examples === 4 && learn.hidden,
         JSON.stringify(learn));
+    check('参考资料库可用',
+        learn.archiveGroups === 8 && learn.archiveSources === 21
+        && learn.archiveMeta >= 6 && learn.archivePolicy === 1
+        && learn.archiveBack === 1 && learn.archiveStillTab === '参考资料',
+        JSON.stringify({ g: learn.archiveGroups, s: learn.archiveSources, m: learn.archiveMeta, p: learn.archivePolicy, b: learn.archiveBack, tab: learn.archiveStillTab }));
 
     check('运行期无异常', exceptions.length === 0, exceptions.slice(0, 3).join('\n'));
 

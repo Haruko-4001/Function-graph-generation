@@ -32,6 +32,7 @@ const APP_FILES = [
     'js/lesson-data.js',
     'js/exam-bank.js',
     'js/node-merge.js',
+    'js/archive-data.js',
     'js/facts.js',
     'js/storyboard.js',
     'js/player.js',

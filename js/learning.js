@@ -21,6 +21,9 @@
     const lessonLib = window.MathLessons || null;
     const lessons = lessonLib ? lessonLib.lessons : {};
     const examBankRaw = window.MathExamBank ? window.MathExamBank.items : [];
+    const archiveLib = window.MathArchive || null;
+    const archiveGroups = archiveLib ? archiveLib.groups : [];
+    const archiveSources = archiveLib ? archiveLib.sources : [];
     const mergeLib = window.MathNodeMerge || {
         merged: {}, reason: {}, target: function (id) { return id; },
         isMerged: function () { return false; }, hostOf: function () { return []; }
@@ -208,6 +211,8 @@
             nodeId: 'A1',
             patternId: null,
             chapterId: 'D-1',
+            archiveId: archiveSources.length ? archiveSources[0].id : null,
+            archiveChapter: null,
             query: '',
             examFilter: 'all',
             experimentId: 'secant',
@@ -360,11 +365,13 @@
         if (search) {
             search.placeholder = state.tab === 'nodes' ? '例如：极值点偏移、焦点三角形'
                 : state.tab === 'patterns' ? '例如：切线、零点个数、中点弦'
+                : state.tab === 'archive' ? '例如：导数、圆锥曲线、新定义、同构'
                 : '例如：e²−1、隐零点、放缩';
         }
         if (state.tab === 'nodes') renderTreeNodes();
         else if (state.tab === 'patterns') renderTreePatterns();
         else if (state.tab === 'books') renderTreeBooks();
+        else if (state.tab === 'archive') renderTreeArchive();
         else if (state.tab === 'conclusions') renderTreeConclusions();
         else if (state.tab === 'practice') renderTreePractice();
         else renderTreeExperiments();
@@ -387,6 +394,117 @@
         }).join('');
         tree.innerHTML = '<p class="learn-side-note">两本专著 · ' + books.reduce((n, b) => n + b.chapters.length, 0)
             + ' 章 · 完整小节索引</p>' + (html || '<p class="learn-empty">没有匹配的章节。</p>');
+    }
+
+    /* ---------------- 参考资料库 ---------------- */
+
+    const STATUS_LABEL = {
+        indexed: '目录索引', 'already-integrated': '已纳入精讲',
+        extension: '超纲/跨学科', culture: '数学文化'
+    };
+
+    function archiveMatch(s, q) {
+        if (!q) return true;
+        const hay = (s.title + ' ' + s.author + ' ' + s.nature + ' ' + s.summary + ' '
+            + (s.keywords || []).join(' ') + ' ' + (s.structure || []).join(' ')).toLowerCase();
+        return hay.indexOf(q) >= 0;
+    }
+
+    function renderTreeArchive() {
+        const q = state.query.trim().toLowerCase();
+        const ordered = archiveGroups.slice().sort((a, b) => a.order - b.order);
+        const html = ordered.map((g) => {
+            const list = archiveSources.filter((s) => s.group === g.id && archiveMatch(s, q));
+            if (!list.length) return '';
+            const items = list.map((s) => '<button type="button" class="learn-node'
+                + (s.id === state.archiveId && state.tab === 'archive' ? ' active' : '') + '" data-archive="' + esc(s.id) + '">'
+                + '<span class="learn-node-id">' + esc(s.id.replace('REF-', '')) + '</span>'
+                + '<span class="learn-node-title">' + esc(s.title) + '</span>'
+                + '</button>').join('');
+            return '<details class="learn-group" open><summary><span class="learn-group-title">' + esc(g.title) + '</span>'
+                + '<span class="learn-group-stage">' + esc(g.stage) + ' · ' + list.length + ' 本</span></summary>'
+                + '<div class="learn-nodes">' + items + '</div></details>';
+        }).join('');
+        const meta = archiveLib ? archiveLib.meta : {};
+        tree.innerHTML = '<p class="learn-side-note">' + (meta.uniqueFiles || archiveSources.length)
+            + ' 本资料 · 按由基础到进阶分组</p>' + (html || '<p class="learn-empty">没有匹配的资料。</p>');
+    }
+
+    function renderArchive(id) {
+        const s = archiveSources.filter((x) => x.id === id)[0];
+        if (!s) { renderArchiveIntro(); return; }
+        state.archiveId = s.id;
+        const group = archiveGroups.filter((g) => g.id === s.group)[0];
+        const meta = archiveLib ? archiveLib.meta : {};
+        const dups = (archiveLib ? archiveLib.duplicates : []).filter((d) => d.sameAs === s.id);
+
+        const metaRows = [
+            ['作者 / 编者', s.author],
+            ['出版信息', s.publisher || '—'],
+            ['篇幅', s.pages + ' 页'],
+            ['文件形态', s.format],
+            ['难度定位', s.level],
+            ['资料类型', s.nature]
+        ].map((r) => '<div class="arch-meta-row"><span class="k">' + esc(r[0]) + '</span><span class="v">' + esc(r[1]) + '</span></div>').join('');
+
+        const kw = (s.keywords || []).map((k) => '<span class="tag">' + esc(k) + '</span>').join('');
+        const structure = (s.structure || []).map((t, i) => '<li><span class="book-topic-no">'
+            + String(i + 1).padStart(2, '0') + '</span><span>' + esc(t) + '</span></li>').join('');
+
+        const nodeChips = (s.nodes || []).map((nid) => {
+            const n = data.nodes[nid];
+            return n ? '<button type="button" class="learn-chip action" data-node="' + esc(nid) + '">'
+                + esc(nid + ' ' + n.title) + '</button>' : '';
+        }).join('');
+        const chapterChips = (s.chapters || []).map((cid) => {
+            const found = findChapter(cid);
+            return found ? '<button type="button" class="learn-chip action" data-chapter="' + esc(cid) + '">'
+                + esc(cid + ' ' + found.chapter.title.replace(/^第.+章\s*/, '')) + '</button>' : '';
+        }).join('');
+
+        const statusClass = s.status === 'already-integrated' ? ' ok' : (s.status === 'extension' || s.status === 'culture' ? ' warn' : '');
+
+        card.innerHTML = '<div class="learn-card-head">'
+            + '<div class="learn-badges"><span class="tag">' + esc(group ? group.title : '参考资料') + '</span>'
+            + '<span class="tag ghost">' + esc(STATUS_LABEL[s.status] || s.status) + '</span>'
+            + '<span class="tag ghost' + statusClass + '">' + esc(s.level) + '</span></div>'
+            + '<h3>' + esc(s.title) + '</h3>'
+            + '<p class="learn-summary">' + esc(s.summary) + '</p></div>'
+            + '<section class="learn-section"><h4>书目信息</h4><div class="arch-meta">' + metaRows + '</div>'
+            + '<p class="arch-file">原始文件：' + esc(s.file) + '</p></section>'
+            + '<section class="learn-section"><h4>方法与专题关键词</h4><div class="learn-chips">' + kw + '</div></section>'
+            + (structure ? '<section class="learn-section"><h4>目录结构（OCR 可见部分）</h4><ol class="book-topics">' + structure + '</ol></section>' : '')
+            + (s.related ? '<section class="learn-section"><h4>与本项目内容的关联</h4><p class="learn-summary">' + esc(s.related) + '</p></section>' : '')
+            + (nodeChips ? '<section class="learn-section"><h4>关联知识节点</h4><div class="learn-chips">' + nodeChips + '</div></section>' : '')
+            + (chapterChips ? '<section class="learn-section"><h4>关联精讲章节</h4><div class="learn-chips">' + chapterChips + '</div></section>' : '')
+            + (s.note ? '<section class="learn-section"><h4>备注</h4><p class="learn-summary">' + esc(s.note) + '</p></section>' : '')
+            + (dups.length ? '<section class="learn-section"><h4>重复副本（内容完全相同，已合并）</h4><p class="learn-summary">'
+                + dups.map((d) => esc(d.file)).join('；') + '</p></section>' : '')
+            + renderArchivePolicy(meta);
+        card.scrollTop = 0;
+    }
+
+    function renderArchiveIntro() {
+        const meta = archiveLib ? archiveLib.meta : {};
+        const ordered = archiveGroups.slice().sort((a, b) => a.order - b.order);
+        const path = ordered.map((g) => '<li><b>' + esc(g.title) + '</b><span>' + esc(g.stage) + ' · '
+            + esc(g.desc) + '</span></li>').join('');
+        card.innerHTML = '<div class="learn-card-head"><div class="learn-badges">'
+            + '<span class="tag">参考资料库</span><span class="tag ghost">' + (meta.uniqueFiles || 0) + ' 本</span></div>'
+            + '<h3>按书索骥，回到原书精读</h3>'
+            + '<p class="learn-summary">这里收录本地数学存档中的资料，按「由基础到进阶、由概念到应用」分组。'
+            + '每本保留书目信息与真实目录结构，并关联到本项目的知识节点与精讲章节，方便按需跳转。</p></div>'
+            + '<section class="learn-section"><h4>学习路径（建议顺序）</h4><ol class="arch-path">' + path + '</ol></section>'
+            + renderArchivePolicy(meta);
+    }
+
+    function renderArchivePolicy(meta) {
+        if (!meta || !meta.extractPolicy) return '';
+        return '<section class="learn-section arch-policy"><h4>内容说明</h4>'
+            + '<p class="learn-summary">共扫描 ' + (meta.scannedFiles || 0) + ' 个 PDF，去重后 '
+            + (meta.uniqueFiles || 0) + ' 本，合并 ' + (meta.duplicateCopies || 0) + ' 个内容相同的副本。'
+            + (meta.allScanned ? '全部为纯图扫描版，无可用文字层。' : '') + '</p>'
+            + '<p class="learn-summary">' + esc(meta.extractPolicy) + '</p></section>';
     }
 
     function renderTreeExperiments() {
@@ -1089,7 +1207,16 @@
     function renderCard() {
         if (state.tab === 'nodes') renderNode(state.nodeId);
         else if (state.tab === 'books') renderChapter(state.chapterId);
-        else if (state.tab === 'patterns') {
+        else if (state.tab === 'archive') {
+            if (state.archiveChapter) {
+                renderChapter(state.archiveChapter);
+                const back = document.createElement('div');
+                back.className = 'arch-back';
+                back.innerHTML = '<button type="button" class="learn-chip action" data-archive-back>← 返回参考资料</button>';
+                card.insertBefore(back, card.firstChild);
+            } else if (state.archiveId) renderArchive(state.archiveId);
+            else renderArchiveIntro();
+        } else if (state.tab === 'patterns') {
             if (state.patternId) renderPattern(state.patternId);
             else card.innerHTML = '<div class="learn-card-head"><h3>题型卡</h3><p class="learn-summary">从左侧选择题型，或直接搜索识别信号。</p></div>';
         } else if (state.tab === 'conclusions') renderConclusions();
@@ -1113,8 +1240,9 @@
     }
 
     function switchTab(tab) {
-        if (['nodes', 'patterns', 'conclusions', 'practice', 'experiments'].indexOf(tab) < 0) return;
+        if (['nodes', 'patterns', 'archive', 'conclusions', 'practice', 'experiments'].indexOf(tab) < 0) return;
         state.tab = tab;
+        state.archiveChapter = null;
         state.query = '';
         if (search) search.value = '';
         render();
@@ -1173,7 +1301,18 @@
         if (patternBtn) { state.patternId = patternBtn.dataset.pattern; state.tab = 'patterns'; render(); return; }
 
         const chapterBtn = e.target.closest('[data-chapter]');
-        if (chapterBtn) { state.chapterId = chapterBtn.dataset.chapter; state.tab = 'books'; render(); return; }
+        if (chapterBtn) {
+            state.chapterId = chapterBtn.dataset.chapter;
+            if (state.tab === 'archive') state.archiveChapter = state.chapterId;
+            else state.tab = 'books';
+            render();
+            return;
+        }
+
+        const archiveBtn = e.target.closest('[data-archive]');
+        if (archiveBtn) { state.archiveId = archiveBtn.dataset.archive; state.archiveChapter = null; state.tab = 'archive'; render(); return; }
+
+        if (e.target.closest('[data-archive-back]')) { state.archiveChapter = null; render(); return; }
 
         const expBtn = e.target.closest('[data-experiment]');
         if (expBtn) { state.experimentId = expBtn.dataset.experiment; state.tab = 'experiments'; render(); return; }
