@@ -14,7 +14,190 @@
     'use strict';
 
     const lessons = {
-        'D-3': {
+        'D-5': {
+            chapterId: 'D-5',
+            nodeId: 'E9',
+            title: '偏移问题对策多',
+            badge: '高考真题精讲',
+            intro: '极值点偏移的核心，是把两个零点/极值点的大小关系转成同一个函数在对称点处的符号。',
+            note: '2 道高考真题，逐题标注来源；解答独立撰写。',
+            sections: [
+                {
+                    id: 'D-5-1',
+                    title: '5.1 零点偏移：x₁+x₂<2',
+                    lead: '把 x₁ 与 2−x₂ 放到同一个单调区间里比较。',
+                    body: [
+                        '偏移问题的标准动作是“对称化”：要证 x₁+x₂<2，就证 x₁<2−x₂；再把 x₁ 与 2−x₂ 放进同一个单调区间。',
+                        '关键是选对辅助函数。若 f 在 (−∞,1) 递减，只需证明 f(2−x₂)<f(x₁)=0。'
+                    ],
+                    method: [
+                        '由 f(x₁)=f(x₂)=0 找出 x₂ 满足的参数关系。',
+                        '计算 f(2−x₂)，用该关系消去参数。',
+                        '把结果化成一元不等式，证明它小于 0。',
+                        '由单调性反推 x₁<2−x₂。'
+                    ],
+                    patterns: ['E-9'],
+                    examples: [
+                        {
+                            id: '真题 1',
+                            source: '2016 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=(x−2)e<sup>x</sup>+a(x−1)<sup>2</sup></code> 有两个零点。<br>（1）求 a 的取值范围；<br>（2）设 x<sub>1</sub>, x<sub>2</sub> 是 f(x) 的两个零点，证明：<code>x<sub>1</sub>+x<sub>2</sub>&lt;2</code>。',
+                            analysis: '第（1）问用 f′ 与最小值定 a&gt;0；第（2）问设 x₁&lt;1&lt;x₂，证明 f(2−x₂)&lt;0，再用 f 在 (−∞,1) 递减。',
+                            steps: [
+                                '<code>f′(x)=(x−1)(e<sup>x</sup>+2a)</code>。a≤0 时，x&lt;1 有 f&lt;0，x&gt;1 至多一个零点，故不可能有两个零点；a&gt;0 时 f 在 (−∞,1) 减、在 (1,+∞) 增，最小值 f(1)=−e&lt;0，两端趋于 +∞，故有两个零点。所以 a&gt;0。',
+                                '设 x<sub>1</sub>&lt;1&lt;x<sub>2</sub>。由 f(x<sub>2</sub>)=0 得 <code>a(x<sub>2</sub>−1)<sup>2</sup>=(2−x<sub>2</sub>)e<sup>x<sub>2</sub></sup></code>。',
+                                '计算 <code>f(2−x<sub>2</sub>)=−x<sub>2</sub>e<sup>2−x<sub>2</sub></sup>+a(x<sub>2</sub>−1)<sup>2</sup></code>，代入上式得 <code>f(2−x<sub>2</sub>)=e<sup>2−x<sub>2</sub></sup>[(2−x<sub>2</sub>)e<sup>2x<sub>2</sub>−2</sup>−x<sub>2</sub>]</code>。',
+                                '令 t=x<sub>2</sub>−1∈(0,1)，需证 <code>(1−t)e<sup>2t</sup>&lt;1+t</code>。令 q(t)=1+t−(1−t)e<sup>2t</sup>，q(0)=0，q′(t)=1−(1−2t)e<sup>2t</sup>，q′(0)=0，q″(t)=4t e<sup>2t</sup>&gt;0，故 q(t)&gt;0。',
+                                '于是 f(2−x<sub>2</sub>)&lt;0=f(x<sub>1</sub>)。f 在 (−∞,1) 递减，所以 2−x<sub>2</sub>&gt;x<sub>1</sub>，即 x<sub>1</sub>+x<sub>2</sub>&lt;2。'
+                            ],
+                            answer: '（1）a&gt;0。（2）证明见解答，核心是 f(2−x<sub>2</sub>)&lt;0 与单调性。',
+                            link: '对应 5.1：先把 x₁ 与 2−x₂ 放到同一单调区间，再用参数关系消去 a。',
+                            pitfall: '不要直接对 f(x₁)−f(x₂) 求导；偏移题的关键是构造 f(2−x₂)，不是硬算差。'
+                        },
+                        {
+                            id: '真题 2',
+                            source: '2018 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=1/x−x+a ln x</code>。若 f(x) 存在两个极值点 x<sub>1</sub>, x<sub>2</sub>，证明：<code>(f(x<sub>1</sub>)−f(x<sub>2</sub>))/(x<sub>1</sub>−x<sub>2</sub>)&lt;a−2</code>。',
+                            analysis: '这是“双变量差商”问题：用两根之积为 1，把差商化成单变量，再用 2ln t&lt;t−1/t。',
+                            steps: [
+                                '两个极值点说明 a&gt;2，x<sub>1</sub>,x<sub>2</sub> 是 x²−a x+1=0 的两根，故 x<sub>1</sub>x<sub>2</sub>=1。',
+                                '设 x<sub>1</sub>&gt;x<sub>2</sub>，差商化简为 <code>−2+a ln(x<sub>1</sub>/x<sub>2</sub>)/(x<sub>1</sub>−x<sub>2</sub>)</code>。',
+                                '要证它 &lt;a−2，只需 <code>ln(x<sub>1</sub>/x<sub>2</sub>)&lt;x<sub>1</sub>−x<sub>2</sub></code>。',
+                                '令 t=x<sub>1</sub>&gt;1，则 x<sub>1</sub>−x<sub>2</sub>=t−1/t，且 <code>2ln t&lt;t−1/t</code>，故结论成立。'
+                            ],
+                            answer: '差商 =−2+a ln(x<sub>1</sub>/x<sub>2</sub>)/(x<sub>1</sub>−x<sub>2</sub>)&lt;a−2。',
+                            link: '对应 5.1：双变量先降成单变量，再用标准不等式比较；与零点偏移的“对称化”是同一类降维思想。',
+                            pitfall: '不要忘记 x<sub>1</sub>x<sub>2</sub>=1；没有这个关系，差商无法降维。'
+                        }
+                    ]
+                }
+            ]
+        },
+        'D-6': {
+            chapterId: 'D-6',
+            nodeId: 'C5',
+            title: '三角函数在导数问题中的身影',
+            badge: '高考真题精讲',
+            intro: '三角函数进入导数题后，周期、有界性与零点分布会成为新的变量。',
+            note: '2 道高考真题，逐题标注来源；解答独立撰写。',
+            sections: [
+                {
+                    id: 'D-6-1',
+                    title: '6.1 三角函数的零点与极值',
+                    lead: '先看有界性，再分段用单调性。',
+                    body: [
+                        '三角函数的有界性常用来“排除远端零点”：sin x≤1 足以把函数压成负值。',
+                        '近端则要靠导数与单调性；不要用一个放缩贯穿整个定义域。'
+                    ],
+                    method: [
+                        '先用 sin x≤1 等有界性排除远端。',
+                        '在剩余区间求导，定单调性。',
+                        '用端点值/零点定理确认零点。',
+                        '分段汇总零点个数。'
+                    ],
+                    patterns: ['C-5', 'E-7'],
+                    examples: [
+                        {
+                            id: '真题 3',
+                            source: '2019 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 20 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=sin x−ln(1+x)</code>。证明：<br>（1）f′(x) 在 (−1,π/2) 存在唯一极大值点；<br>（2）f(x) 有且仅有 2 个零点。',
+                            analysis: '第（1）问对 f′ 再求导；第（2）问在 x≥π 上用 sin x≤1、ln(1+x)&gt;1 排除零点。',
+                            steps: [
+                                '令 g=f′=cos x−1/(1+x)，则 <code>g″=−cos x−2/(1+x)<sup>3</sup>&lt;0</code> 在 (−1,π/2) 上成立。',
+                                'g′ 严格递减，g′(0)=1&gt;0，g′(π/2)&lt;0，故 g′ 有唯一零点，g 有唯一极大值点。',
+                                'f(0)=0；在 (−1,0) 与 (0,π/2) 上分别用 g 的符号说明 f 无零点；在 [π/2,π] 上 f 严格递减，恰有一个零点。',
+                                'x≥π 时，sin x≤1，ln(1+x)≥ln(1+π)&gt;1，故 f&lt;0，无零点。',
+                                '所以 f 有且仅有两个零点：x=0 与 (π/2,π) 内唯一零点。'
+                            ],
+                            answer: '（1）唯一极大值点；（2）两个零点。',
+                            link: '对应 6.1：有界性排除远端，单调性处理近端。',
+                            pitfall: '不要在 (0,π/2) 上直接说 f′ 先正后负；必须说明 g(π/2)&lt;0。'
+                        },
+                        {
+                            id: '真题 4',
+                            source: '2019 年普通高等学校招生全国统一考试（全国Ⅰ卷·文科）数学 · 第 20 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=2sin x−x cos x−x</code>。证明：<br>（1）f′(x) 在 (0,π) 存在唯一零点；<br>（2）若 x∈[0,π] 时 f(x)≥a x，求 a 的取值范围。',
+                            analysis: '第（1）问 f″=x cos x 分段定号；第（2）问由 x=π 得 a≤0，再证 f≥0。',
+                            steps: [
+                                '<code>f′(x)=cos x+x sin x−1</code>，<code>f″(x)=x cos x</code>。',
+                                '在 (0,π/2) 上 f″&gt;0，f′ 递增；在 (π/2,π) 上 f″&lt;0，f′ 递减。',
+                                'f′(0)=0，f′(π/2)=π/2−1&gt;0，f′(π)=−2&lt;0，故 f′ 在 (π/2,π) 有唯一零点。',
+                                'x=π 时 f(π)=0，不等式 0≥aπ 给出 a≤0。a≤0 时 f≥0≥a x，故范围是 a≤0。'
+                            ],
+                            answer: '（1）唯一零点；（2）a≤0。',
+                            link: '对应 6.1：先分段定 f′ 的单调，再由端点值锁定参数。',
+                            pitfall: '只由 f≥0 推出 a≤0 不够，还要回证 a≤0 时恒成立。'
+                        }
+                    ]
+                }
+            ]
+        },
+        'D-7': {
+            chapterId: 'D-7',
+            nodeId: 'E12',
+            title: '计算与估值联袂登场',
+            badge: '高考真题精讲',
+            intro: '估值题的关键是双侧夹逼：下界与上界同时逼近目标。',
+            note: '2 道高考真题，逐题标注来源；解答独立撰写。',
+            sections: [
+                {
+                    id: 'D-7-1',
+                    title: '7.1 数列与数值估值',
+                    lead: '把乘积取对数变成和，再用 ln(1+x)≤x 放缩。',
+                    body: [
+                        '估值不是“算得更精确”，而是用不等式把目标夹在两个可计算的数之间。',
+                        '遇到乘积，先取对数；遇到 ln(1+x)，优先用 ln(1+x)≤x。'
+                    ],
+                    method: [
+                        '乘积取对数，转化为和。',
+                        '选择上界/下界不等式。',
+                        '求和的封闭形式。',
+                        '用两端夹逼确定整数或范围。'
+                    ],
+                    patterns: ['E-12', 'F-8'],
+                    examples: [
+                        {
+                            id: '真题 5',
+                            source: '2017 年普通高等学校招生全国统一考试（全国Ⅲ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=x−1−a ln x</code>。<br>（1）若 f(x)≥0，求 a 的值；<br>（2）设 m 为整数，且对任意正整数 n，<code>(1+1/2)(1+1/2<sup>2</sup>)…(1+1/2<sup>n</sup>)&lt;m</code>，求 m 的最小值。',
+                            analysis: '第（1）问由 x=1 处取等确定 a=1；第（2）问取对数，用 ln(1+x)≤x 得乘积&lt;e&lt;3，再取 n=3 说明 m 不能是 2。',
+                            steps: [
+                                'f(1)=0，且 f≥0，故 x=1 是最小值点；f′(1)=1−a=0，得 a=1。',
+                                'a=1 时 f=x−1−ln x≥0，即 ln x≤x−1。',
+                                '取对数：<code>ln P<sub>n</sub>=Σ ln(1+2<sup>−k</sup>)≤Σ2<sup>−k</sup>&lt;1</code>，所以 P<sub>n</sub>&lt;e&lt;3。',
+                                'n=3 时 P<sub>3</sub>=1.5×1.25×1.125=2.109375&gt;2，故 m 不能为 2；最小整数 m=3。'
+                            ],
+                            answer: '（1）a=1。（2）m<sub>min</sub>=3。',
+                            link: '对应 7.1：先由取等点定 a，再把乘积取对数，用 ln(1+x)≤x 夹出上界。',
+                            pitfall: '只证明 P<sub>n</sub>&lt;3 不够，还要找一个 n 使 P<sub>n</sub>&gt;2，才能排除 m=2。'
+                        },
+                        {
+                            id: '真题 6',
+                            source: '2018 年普通高等学校招生全国统一考试（全国Ⅰ卷·文科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=a e<sup>x</sup>−ln x−1</code>。<br>（1）设 x=2 是 f(x) 的极值点，求 a，并求 f(x) 的单调区间；<br>（2）证明：当 a≥1/e 时，f(x)≥0。',
+                            analysis: '第（1）问由 f′(2)=0 求 a；第（2）问用 a≥1/e 放缩到 g=e<sup>x−1</sup>−ln x−1，再求 g 的最小值。',
+                            steps: [
+                                '（1）f′(x)=a e<sup>x</sup>−1/x。由 f′(2)=0 得 <code>a=1/(2e<sup>2</sup>)</code>。',
+                                '此时 f′ 在 (0,2) 为负、在 (2,+∞) 为正，故 f 在 (0,2) 递减、在 (2,+∞) 递增。',
+                                '（2）a≥1/e 时，<code>f(x)≥e<sup>x−1</sup>−ln x−1</code>。令 g=e<sup>x−1</sup>−ln x−1。',
+                                '<code>g′(x)=e<sup>x−1</sup>−1/x</code>，g′(1)=0；g″=e<sup>x−1</sup>+1/x<sup>2</sup>&gt;0，故 g′ 递增，g 在 x=1 取最小值 g(1)=0。',
+                                '因此 f(x)≥g(x)≥0。'
+                            ],
+                            answer: '（1）<code>a=1/(2e<sup>2</sup>)</code>；在 (0,2) 递减、在 (2,+∞) 递增。（2）证明见解答。',
+                            link: '对应 7.1：先用 a≥1/e 把 f 放缩成 g，再对 g 求最小值；这是“参数放缩 + 估值”的组合。',
+                            pitfall: '放缩方向要看清：a 越大 f 越大，所以 a≥1/e 时可以用 a=1/e 作为下界。'
+                        }
+                    ]
+                }
+            ]
+        },
+                'D-3': {
             chapterId: 'D-3',
             nodeId: 'E5',
             title: '必要性探路巧解恒成立',

@@ -19,8 +19,18 @@ const lesson = lessons['D-2'];
 const lesson1 = lessons['D-1'];
 const lesson3 = lessons['D-3'];
 const lesson4 = lessons['D-4'];
+const lesson5 = lessons['D-5'];
+const lesson6 = lessons['D-6'];
+const lesson7 = lessons['D-7'];
 
 console.log('\n[精讲样章：结构与内容]');
+
+test('第五、六、七章各 2 道高考真题', () => {
+    [lesson5, lesson6, lesson7].forEach((l, i) => {
+        assert(l, '缺第' + (5 + i) + '章');
+        assert(l.sections.reduce((n, s) => n + s.examples.length, 0) === 2, '第' + (5 + i) + '章题数');
+    });
+});
 
 test('第三、四章各 2 道高考真题', () => {
     assert(lesson3 && lesson3.sections.reduce((n, s) => n + s.examples.length, 0) === 2, '第3章题数');
