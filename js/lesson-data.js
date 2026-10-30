@@ -14,7 +14,141 @@
     'use strict';
 
     const lessons = {
-        'D-2': {
+        'D-1': {
+            chapterId: 'D-1',
+            nodeId: 'D2',
+            title: '导数基础与不等式汇总',
+            badge: '高考真题精讲',
+            intro: '第一章解决三件事：导数怎么算、单调性怎么判、不等式从哪里来。'
+                + '本批用 4 道高考真题把“求导—定号—最值—不等式”串成一条线。',
+            note: '4 道高考真题，逐题标注年份、卷别、题号；解答独立撰写，不照录教辅解析。',
+            sections: [
+                {
+                    id: 'D-1-1',
+                    title: '1.1 导数运算与单调性',
+                    lead: '先求导，再把导数写成能定号的形式。',
+                    body: [
+                        '导数题的第一步不是“构造”，而是把 f′ 算对、化简到能看出符号。分式函数通常通分，把分子写成二次式；含指数、对数的函数则优先提取公因式。',
+                        '单调性讨论的标准顺序是：定义域 → f′=0 的根 → 根是否在定义域内 → 按根分区间定号。参数题还要看二次方程判别式与根的符号。'
+                    ],
+                    method: [
+                        '先写定义域，再求导并通分/因式分解。',
+                        '解 f′=0，判断根的存在性与位置。',
+                        '按根把定义域分段，逐段判断 f′ 的符号。',
+                        '含参时按判别式、根的大小、根是否在定义域内分类。'
+                    ],
+                    patterns: ['D-4', 'D-5', 'E-1'],
+                    examples: [
+                        {
+                            id: '真题 1',
+                            source: '2018 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=1/x−x+a ln x</code>。<br>（1）讨论 f(x) 的单调性；<br>（2）若 f(x) 存在两个极值点 x<sub>1</sub>, x<sub>2</sub>，证明：<code>(f(x<sub>1</sub>)−f(x<sub>2</sub>))/(x<sub>1</sub>−x<sub>2</sub>)&lt;a−2</code>。',
+                            analysis: '第（1）问把 f′ 通分后，分子是二次式，按判别式与根的正负分类；第（2）问利用两根之积为 1，把差商化成只含 x<sub>1</sub>/x<sub>2</sub> 的式子。',
+                            steps: [
+                                '定义域 x&gt;0。<code>f′(x)=−1/x<sup>2</sup>−1+a/x=−(x<sup>2</sup>−a x+1)/x<sup>2</sup></code>。',
+                                '若 a≤2，则对 x&gt;0 有 x<sup>2</sup>−a x+1≥0，故 f′≤0，f 在 (0,+∞) 上单调递减（a=2 时仅在 x=1 处 f′=0）。',
+                                '若 a&gt;2，方程 x<sup>2</sup>−a x+1=0 有两个正根 <code>x<sub>2</sub>&lt;1&lt;x<sub>1</sub></code>，且 x<sub>1</sub>x<sub>2</sub>=1。f′ 在 (0,x<sub>2</sub>) 与 (x<sub>1</sub>,+∞) 为负，在 (x<sub>2</sub>,x<sub>1</sub>) 为正；所以 f 在两个外侧区间递减、在中间递增。',
+                                '第（2）问：两个极值点说明 a&gt;2。设 x<sub>1</sub>&gt;x<sub>2</sub>，则 <code>x<sub>1</sub>−x<sub>2</sub>=√(a<sup>2</sup>−4)</code>，x<sub>1</sub>x<sub>2</sub>=1。',
+                                '差商 <code>=(1/x<sub>1</sub>−1/x<sub>2</sub>−(x<sub>1</sub>−x<sub>2</sub>)+a ln(x<sub>1</sub>/x<sub>2</sub>))/(x<sub>1</sub>−x<sub>2</sub>)</code>。由 x<sub>1</sub>x<sub>2</sub>=1，前两项合并为 −2，故差商 <code>=−2+a ln(x<sub>1</sub>/x<sub>2</sub>)/(x<sub>1</sub>−x<sub>2</sub>)</code>。',
+                                '要证差商 &lt;a−2，只需证 <code>ln(x<sub>1</sub>/x<sub>2</sub>)&lt;x<sub>1</sub>−x<sub>2</sub></code>。令 t=x<sub>1</sub>&gt;1，则 x<sub>1</sub>−x<sub>2</sub>=t−1/t，而 <code>ln(x<sub>1</sub>/x<sub>2</sub>)=2ln t&lt;t−1/t</code>（t&gt;1 时成立），故原不等式得证。'
+                            ],
+                            answer: '（1）a≤2 时在 (0,+∞) 递减；a&gt;2 时在 (0,x<sub>2</sub>)、(x<sub>1</sub>,+∞) 递减，在 (x<sub>2</sub>,x<sub>1</sub>) 递增，其中 x<sub>1,2</sub>=(a±√(a<sup>2</sup>−4))/2。（2）差商 =−2+a ln(x<sub>1</sub>/x<sub>2</sub>)/(x<sub>1</sub>−x<sub>2</sub>)&lt;a−2。',
+                            link: '对应 1.1：先通分定号，再用两根关系把差商降成单变量。二次方程的判别式与根的正负，是本章最基本的分类依据。',
+                            pitfall: 'a≤2 时不要只写“f′&lt;0”；a=2 时 f′ 在 x=1 处为 0，仍是单调递减。'
+                        }
+                    ]
+                },
+                {
+                    id: 'D-1-2',
+                    title: '1.2 单调性与零点',
+                    lead: '先定单调，再用端点值或极限确认零点个数。',
+                    body: [
+                        '零点个数不是只看 f′=0 的个数，而是看“单调区间 + 端点符号”。每个单调区间内至多一个零点，再用零点定理确认存在。',
+                        '含参零点问题通常先求最小值，再令最小值与 0 比较；参数的分界点往往来自最小值等于 0 的方程。'
+                    ],
+                    method: [
+                        '求导并因式分解，确定单调区间与最小值点。',
+                        '写出最小值关于参数的表达式。',
+                        '令最小值与 0 比较，解参数的分界值。',
+                        '用两端极限/特殊值确认零点确实存在。'
+                    ],
+                    patterns: ['E-2', 'E-7'],
+                    examples: [
+                        {
+                            id: '真题 2',
+                            source: '2017 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=a e<sup>2x</sup>+(a−2)e<sup>x</sup>−x</code>。<br>（1）讨论 f(x) 的单调性；<br>（2）若 f(x) 有两个零点，求 a 的取值范围。',
+                            analysis: 'f′ 能因式分解为 <code>(a e<sup>x</sup>−1)(2e<sup>x</sup>+1)</code>；第二问先由最小值小于 0 得到 a 的范围，再用两端极限确认两个零点。',
+                            steps: [
+                                '<code>f′(x)=2a e<sup>2x</sup>+(a−2)e<sup>x</sup>−1=(a e<sup>x</sup>−1)(2e<sup>x</sup>+1)</code>。',
+                                '若 a≤0，则 a e<sup>x</sup>−1&lt;0，f′&lt;0，f 在 R 上递减，至多一个零点。',
+                                '若 a&gt;0，f′=0 当且仅当 <code>e<sup>x</sup>=1/a</code>，即 x=−ln a。x&lt;−ln a 时 f′&lt;0，x&gt;−ln a 时 f′&gt;0。',
+                                '最小值 <code>f(−ln a)=1/a+(a−2)/a+ln a=1−1/a+ln a</code>。令 g(a)=1−1/a+ln a，g′(a)=1/a<sup>2</sup>+1/a&gt;0，g(1)=0，所以 0&lt;a&lt;1 时最小值小于 0。',
+                                '当 0&lt;a&lt;1 时，x→−∞ 与 x→+∞ 都有 f→+∞（注意 −x 项），最小值小于 0，故在最小值两侧各有一个零点，共两个。a=1 时最小值为 0，只有一个零点；a&gt;1 时无零点。'
+                            ],
+                            answer: '（1）a≤0 时在 R 上递减；a&gt;0 时在 (−∞,−ln a) 递减、在 (−ln a,+∞) 递增。（2）0&lt;a&lt;1。',
+                            link: '对应 1.2：先由 f′ 的因式分解定单调，再比较最小值与 0；参数的临界值来自 g(1)=0。',
+                            pitfall: 'a≤0 时 f 递减但仍可能有一个零点；题目要求“两个”，所以必须排除。'
+                        }
+                    ]
+                },
+                {
+                    id: 'D-1-3',
+                    title: '1.3 不等式与参数',
+                    lead: '把不等式整理成“参数 ≥ 某个函数”，再求那个函数的最大值。',
+                    body: [
+                        '含参不等式恒成立，常见做法是分离参数：把 a 放到一边，把 x 放到另一边，转化为求一个函数的最值。分离时要注意 x 的符号，避免不等号方向出错。',
+                        '如果参数无法分离，就先找必要条件（端点、切线、二阶导），再证明充分性。这一章先建立“最值—参数范围”的基本链条。'
+                    ],
+                    method: [
+                        '移项，把参数与 x 分离；注意除数符号。',
+                        '对分离后的函数求导，找最大值或最小值。',
+                        '由最值写出参数范围。',
+                        '回代验证端点与等号条件。'
+                    ],
+                    patterns: ['E-5', 'E-8'],
+                    examples: [
+                        {
+                            id: '真题 3',
+                            source: '2018 年普通高等学校招生全国统一考试（全国Ⅱ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=e<sup>x</sup>−a x<sup>2</sup></code>。<br>（1）若 a=1，证明：当 x≥0 时，f(x)≥1；<br>（2）若 f(x) 在 (0,+∞) 只有一个零点，求 a。',
+                            analysis: '第（1）问构造 g=e<sup>x</sup>−x<sup>2</sup>−1，连续求导定号；第（2）问分离参数 a=e<sup>x</sup>/x<sup>2</sup>，求其最小值。',
+                            steps: [
+                                '（1）令 <code>g(x)=e<sup>x</sup>−x<sup>2</sup>−1</code>，g(0)=0。g′(x)=e<sup>x</sup>−2x，g″(x)=e<sup>x</sup>−2。',
+                                'g′ 在 x=ln2 取最小值 <code>2−2ln2&gt;0</code>，所以 g′&gt;0，g 在 [0,+∞) 递增，g(x)≥g(0)=0。',
+                                '（2）x&gt;0 时 f(x)=0 等价于 <code>a=e<sup>x</sup>/x<sup>2</sup></code>。令 h(x)=e<sup>x</sup>/x<sup>2</sup>，则 <code>h′(x)=e<sup>x</sup>(x−2)/x<sup>3</sup></code>。',
+                                'h 在 (0,2) 递减、在 (2,+∞) 递增，最小值 <code>h(2)=e<sup>2</sup>/4</code>；且 x→0<sup>+</sup> 与 x→+∞ 时 h→+∞。',
+                                '因此当且仅当 <code>a=e<sup>2</sup>/4</code> 时，水平线 y=a 与 h 的图象只有一个交点，即 f 在 (0,+∞) 只有一个零点。'
+                            ],
+                            answer: '（1）证明见解答。（2）<code>a=e<sup>2</sup>/4</code>。',
+                            link: '对应 1.3：第（2）问就是“分离参数 + 求最小值”的标准流程；第（1）问则是不等式证明的连续求导。',
+                            pitfall: '第（2）问不要忘记 x&gt;0；a 小于最小值时无零点，大于最小值时有两个零点。'
+                        },
+                        {
+                            id: '真题 4',
+                            source: '2020 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=e<sup>x</sup>+a x<sup>2</sup>−x</code>。<br>（1）当 a=1 时，讨论 f(x) 的单调性；<br>（2）当 x≥0 时，<code>f(x)≥(1/2)x<sup>3</sup>+1</code>，求 a 的取值范围。',
+                            analysis: '第（1）问连续求导；第（2）问分离参数，转化为求 <code>φ(x)=(x<sup>3</sup>/2+x+1−e<sup>x</sup>)/x<sup>2</sup></code> 的最大值。',
+                            steps: [
+                                '（1）a=1 时 <code>f′(x)=e<sup>x</sup>+2x−1</code>，f″(x)=e<sup>x</sup>+2&gt;0，f′ 严格递增；f′(0)=0，所以 x&lt;0 时 f′&lt;0，x&gt;0 时 f′&gt;0。f 在 (−∞,0) 递减、在 (0,+∞) 递增。',
+                                '（2）x=0 时不等式为 1≥1，恒成立。x&gt;0 时分离参数：<code>a≥φ(x)=(x<sup>3</sup>/2+x+1−e<sup>x</sup>)/x<sup>2</sup></code>。',
+                                '<code>φ′(x)=[x<sup>3</sup>/2+(2−x)e<sup>x</sup>−x−2]/x<sup>3</sup></code>。令分子为 N(x)，则 N(2)=0，<code>N′(x)=3x<sup>2</sup>/2+(1−x)e<sup>x</sup>−1</code>，N″(x)=x(3−e<sup>x</sup>)。',
+                                'N′(0)=0，N′ 在 (0,ln3) 递增、在 (ln3,+∞) 递减，且 N′(2)=5−e<sup>2</sup>&lt;0，所以 N′ 先正后负，N 先增后减；又 N(0)=N(2)=0，故 0&lt;x&lt;2 时 N&gt;0，x&gt;2 时 N&lt;0。',
+                                '所以 φ 在 (0,2) 递增、在 (2,+∞) 递减，最大值 <code>φ(2)=(7−e<sup>2</sup>)/4</code>。因此 <code>a≥(7−e<sup>2</sup>)/4</code>。'
+                            ],
+                            answer: '（1）在 (−∞,0) 递减、在 (0,+∞) 递增。（2）<code>a≥(7−e<sup>2</sup>)/4</code>。',
+                            link: '对应 1.3：分离参数后，关键是证明 φ 的最大值在 x=2；这类“最大值点恰好是整数”的题，常用 N′ 的单调性定位。',
+                            pitfall: '第（2）问不能只由 x=0 的二阶导得到范围；必须在整个 x&gt;0 上求 φ 的最大值。'
+                        }
+                    ]
+                }
+            ]
+        },
+                'D-2': {
             chapterId: 'D-2',
             nodeId: 'E8',
             title: '妙话函数不等式',

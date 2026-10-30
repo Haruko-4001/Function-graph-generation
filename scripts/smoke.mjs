@@ -248,14 +248,18 @@ try {
         const examExamples = document.querySelectorAll('.lesson-example').length;
         const examSources = document.querySelectorAll('.lesson-source').length;
         const lessonSecs = document.querySelectorAll('.lesson-sec').length;
+        document.querySelector('[data-node="D2"]').click();
+        await new Promise(r => setTimeout(r, 400));
+        const lesson1Examples = document.querySelectorAll('.lesson-example').length;
         document.getElementById('learn-close').click();
         await new Promise(r => setTimeout(r, 260));
-        return { groups, title, patterns, options, experiments, expTraces, bookContext, examExamples, examSources, lessonSecs, hidden: document.getElementById('learn-overlay').hidden };
+        return { groups, title, patterns, options, experiments, expTraces, bookContext, examExamples, examSources, lessonSecs, lesson1Examples, hidden: document.getElementById('learn-overlay').hidden };
     })()`);
     check('知识地图与书目融合/真题样章可用',
         learn.groups === 5 && learn.title.length > 0 && learn.patterns === 71
         && learn.options === 4 && learn.experiments === 7 && learn.expTraces >= 2
-        && learn.bookContext > 0 && learn.examExamples === 6 && learn.examSources === 6 && learn.lessonSecs === 3 && learn.hidden,
+        && learn.bookContext > 0 && learn.examExamples === 6 && learn.examSources === 6 && learn.lessonSecs === 3
+        && learn.lesson1Examples === 4 && learn.hidden,
         JSON.stringify(learn));
 
     check('运行期无异常', exceptions.length === 0, exceptions.slice(0, 3).join('\n'));
