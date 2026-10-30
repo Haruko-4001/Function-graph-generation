@@ -242,21 +242,20 @@ try {
         await new Promise(r => setTimeout(r, 300));
         document.querySelector('[data-node="E7"]').click();
         await new Promise(r => setTimeout(r, 300));
-        const nodeExamples = document.querySelectorAll('.node-example').length;
         const bookContext = document.querySelectorAll('.book-context-item').length;
-        document.querySelector('.learn-tab[data-learn-tab="practice"]').click();
-        await new Promise(r => setTimeout(r, 300));
-        document.querySelector('[data-start-practice="calc"]').click();
-        await new Promise(r => setTimeout(r, 300));
-        const calcRows = document.querySelectorAll('.calc-answer-row').length;
+        document.querySelector('[data-node="E8"]').click();
+        await new Promise(r => setTimeout(r, 400));
+        const examExamples = document.querySelectorAll('.lesson-example').length;
+        const examSources = document.querySelectorAll('.lesson-source').length;
+        const lessonSecs = document.querySelectorAll('.lesson-sec').length;
         document.getElementById('learn-close').click();
         await new Promise(r => setTimeout(r, 260));
-        return { groups, title, patterns, options, experiments, expTraces, nodeExamples, bookContext, calcRows, hidden: document.getElementById('learn-overlay').hidden };
+        return { groups, title, patterns, options, experiments, expTraces, bookContext, examExamples, examSources, lessonSecs, hidden: document.getElementById('learn-overlay').hidden };
     })()`);
-    check('知识地图与节点例题/书目融合/计算自测可用',
+    check('知识地图与书目融合/真题样章可用',
         learn.groups === 8 && learn.title.length > 0 && learn.patterns === 71
         && learn.options === 4 && learn.experiments === 7 && learn.expTraces >= 2
-        && learn.nodeExamples === 3 && learn.bookContext > 0 && learn.calcRows === 1 && learn.hidden,
+        && learn.bookContext > 0 && learn.examExamples === 3 && learn.examSources === 3 && learn.lessonSecs === 3 && learn.hidden,
         JSON.stringify(learn));
 
     check('运行期无异常', exceptions.length === 0, exceptions.slice(0, 3).join('\n'));

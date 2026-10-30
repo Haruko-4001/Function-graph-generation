@@ -19,7 +19,6 @@
     const books = bookLib ? bookLib.books : [];
     const lessonLib = window.MathLessons || null;
     const lessons = lessonLib ? lessonLib.lessons : {};
-    const nodeExampleLib = window.MathNodeExamples || null;
 
     const $ = (id) => document.getElementById(id);
     const overlay = $('learn-overlay');
@@ -30,7 +29,7 @@
 
     const STORE_KEY = 'mfv.learning.v1';
     const EXAM_LABEL = { highschool: '高中可用', extension: '拓展', university: '大学方法', caution: '慎用' };
-    const TYPE_LABEL = { identify: '识别', method: '方法', pitfall: '错因', calc: '计算' };
+    const TYPE_LABEL = { identify: '识别', method: '方法', pitfall: '错因' };
 
     let currentId = null;
     let lastFocus = null;
@@ -319,7 +318,6 @@
             + '<div><b>' + rate + '%</b><span>正确率</span></div>'
             + '</div>'
             + '<div class="learn-filter">'
-            + '<button class="learn-filter-btn" data-start-practice="calc">计算训练</button>'
             + '<button class="learn-filter-btn" data-start-practice="mixed">方法复习</button>'
             + '<button class="learn-filter-btn" data-start-practice="identify">识别专项</button>'
             + '<button class="learn-filter-btn" data-start-practice="method">方法专项</button>'
@@ -398,23 +396,6 @@
         }).join('') + '</div>';
     }
 
-    function nodeExamplesHtml(node) {
-        if (!nodeExampleLib) return '<p class="learn-empty">例题引擎未加载。</p>';
-        const tasks = nodeExampleLib.tasksFor(Object.assign({ id: node.id }, node));
-        if (!tasks.length) return '<p class="learn-empty">暂无例题。</p>';
-        return '<div class="node-examples">' + tasks.map((t, i) => {
-            return '<article class="node-example">'
-                + '<div class="node-example-head"><span class="tag">例 ' + (i + 1) + '</span>'
-                + '<span class="node-example-kind">' + esc(TYPE_LABEL[t.kind] || t.kind) + '</span></div>'
-                + '<p class="node-example-problem">' + t.prompt + '</p>'
-                + '<details class="node-example-answer"><summary>查看解析与答案</summary>'
-                + '<p><b>方法</b>' + esc(t.method) + '</p>'
-                + '<p><b>答案</b>' + esc(t.answerText) + '</p>'
-                + '<p class="lesson-pitfall"><b>易错</b>' + esc(t.pitfall) + '</p>'
-                + '</details></article>';
-        }).join('') + '</div>';
-    }
-
     function renderNode(id) {
         const node = data.nodes[id];
         if (!node) return;
@@ -448,7 +429,6 @@
             + '<section class="learn-section"><h4>要点</h4><ul class="learn-points">' + points + '</ul></section>'
             + (chips ? '<section class="learn-section"><h4>关联题型</h4><div class="learn-chips">' + chips + '</div></section>' : '')
             + '<section class="learn-section"><h4>书目定位</h4>' + bookContextHtml(id) + '</section>'
-            + '<section class="learn-section"><h4>例题 · 3 道</h4>' + nodeExamplesHtml(Object.assign({ id: id }, node)) + '</section>'
             + (prereq ? '<section class="learn-section"><h4>前置知识</h4><div class="learn-chips">' + prereq + '</div></section>' : '')
             + Object.keys(lessons).filter((k) => lessons[k].nodeId === id).map((k) => lessonHtml(k)).join('')
             + '<section class="learn-section learn-actions">'
@@ -547,6 +527,7 @@
                 return '<article class="lesson-example">'
                     + '<div class="lesson-example-head"><span class="tag">' + esc(ex.tag) + '</span>'
                     + '<b>' + esc(ex.id) + '</b></div>'
+                    + '<p class="lesson-source">来源：' + esc(ex.source || '未标注') + '</p>'
                     + '<p class="lesson-problem">' + ex.problem + '</p>'
                     + '<p class="lesson-analysis"><b>分析</b>' + ex.analysis + '</p>'
                     + '<details class="lesson-answer"><summary>查看解答与答案</summary>'
@@ -632,18 +613,6 @@
     }
 
     function startPractice(kind, patternId) {
-        if (kind === 'calc') {
-            const pool = nodeExampleLib ? nodeExampleLib.quizPool(data.nodes) : [];
-            const questions = shuffle(pool).slice(0, 10).map((t) => Object.assign({}, t, {
-                type: 'calc',
-                patternId: t.nodeId
-            }));
-            session = { mode: 'calc', questions, index: 0, answers: [], wrong: [], finished: false, feedback: null };
-            state.tab = 'practice';
-            render();
-            card.scrollTop = 0;
-            return;
-        }
         let questions = [];
         if (kind === 'pattern' && patternById[patternId]) {
             ['identify', 'method', 'pitfall'].forEach((type) => {
@@ -683,27 +652,6 @@
         renderPractice();
     }
 
-    function submitCalc() {
-        if (!session || session.mode !== 'calc' || session.finished || session.feedback) return;
-        const input = document.getElementById('calc-answer');
-        const q = session.questions[session.index];
-        const ok = nodeExampleLib.check(q, input ? input.value : '');
-        session.answers.push(ok);
-        if (!ok) session.wrong.push(q);
-        session.feedback = { ok, value: input ? input.value : '' };
-
-        const st = state.stats;
-        st.attempted++;
-        if (ok) st.correct++;
-        const t = st.byType.calc || (st.byType.calc = { attempted: 0, correct: 0 });
-        t.attempted++;
-        if (ok) t.correct++;
-        if (!ok) st.wrong[q.nodeId] = (st.wrong[q.nodeId] || 0) + 1;
-        persist();
-        renderSidebar();
-        renderPractice();
-    }
-
     function nextQuestion() {
         if (!session) return;
         if (session.index >= session.questions.length - 1) {
@@ -723,11 +671,10 @@
         if (!session) {
             const s = state.stats;
             card.innerHTML = '<div class="learn-card-head"><div class="learn-badges"><span class="tag">三层自测</span></div>'
-                + '<h3>计算训练</h3><p class="learn-summary">按知识节点的例题同难度抽题：求零点个数、单调区间数、极值点、切线斜率、离心率、弦长、定积分或极限。'
-                + '答案由引擎核对，允许 0.1% 误差；每次 10 题。</p></div>'
+                + '<h3>方法复习</h3><p class="learn-summary">题目由 ' + patterns.length
+                + ' 个题型族生成：先认题型，再选通法，最后避开易错点。每次 10 题。真题计算自测将在题库扩充后接入。</p></div>'
                 + '<section class="learn-section learn-practice-start">'
-                + '<button class="btn" data-start-practice="calc">开始计算训练（10 题）</button>'
-                + '<button class="btn ghost" data-start-practice="mixed">方法复习 10 题</button>'
+                + '<button class="btn" data-start-practice="mixed">开始方法复习 10 题</button>'
                 + '<button class="btn ghost" data-start-practice="identify">只练识别</button>'
                 + '<button class="btn ghost" data-start-practice="method">只练方法</button>'
                 + '<button class="btn ghost" data-start-practice="pitfall">只练错因</button>'
@@ -744,14 +691,10 @@
                 const pid = q.patternId || q.nodeId;
                 const p = patternById[pid];
                 const n = data.nodes[pid];
-                if (q.type === 'calc') {
-                    return '<button type="button" class="search-hit" data-node="' + esc(q.nodeId) + '">'
-                        + '<b>' + esc(n ? n.title : q.nodeId) + '</b><span>计算 · ' + esc(q.prompt.slice(0, 46)) + '</span></button>';
-                }
                 return '<button type="button" class="search-hit" data-pattern="' + esc(pid) + '">'
                     + '<b>' + esc(p ? p.title : pid) + '</b><span>' + esc(TYPE_LABEL[q.type]) + ' · ' + esc(pid) + '</span></button>';
             }).join('');
-            const typeStats = ['calc', 'identify', 'method', 'pitfall'].map((type) => {
+            const typeStats = ['identify', 'method', 'pitfall'].map((type) => {
                 const t = state.stats.byType[type] || { attempted: 0, correct: 0 };
                 return t.attempted ? '<div class="deriv-row"><span class="k">' + TYPE_LABEL[type] + '</span><span>'
                     + t.correct + '/' + t.attempted + '（' + Math.round(t.correct / t.attempted * 100) + '%）</span></div>' : '';
@@ -762,30 +705,13 @@
                 + '<section class="learn-section"><h4>分层表现</h4>' + typeStats + '</section>'
                 + '<section class="learn-section"><h4>错题回溯</h4>' + (wrongList || '<p class="learn-empty">没有错题。</p>') + '</section>'
                 + '<section class="learn-section learn-actions">'
-                + '<button class="btn" data-start-practice="calc">再来一轮计算</button>'
+                + '<button class="btn" data-start-practice="mixed">再来一轮</button>'
                 + '<button class="btn ghost" data-learn-tab="patterns">去题型卡复习</button>'
                 + '</section>';
             return;
         }
 
         const q = session.questions[session.index];
-        if (session.mode === 'calc') {
-            const node = data.nodes[q.nodeId];
-            card.innerHTML = '<div class="learn-card-head"><div class="learn-badges">'
-                + '<span class="tag">第 ' + (session.index + 1) + ' / ' + session.questions.length + ' 题</span>'
-                + '<span class="tag ghost">计算</span>'
-                + '<button type="button" class="tag ghost action" data-node="' + esc(q.nodeId) + '">' + esc(node ? node.title : q.nodeId) + '</button>'
-                + '</div><h3>' + esc(q.prompt) + '</h3></div>'
-                + '<div class="calc-answer-row"><input type="text" id="calc-answer" inputmode="decimal" placeholder="输入数值，保留 4 位小数"'
-                + (session.feedback ? ' disabled' : '') + ' value="' + esc(session.feedback ? session.feedback.value : '') + '">'
-                + '<button class="btn" type="button" data-calc-submit' + (session.feedback ? ' disabled' : '') + '>提交</button></div>'
-                + (session.feedback ? '<div class="practice-feedback ' + (session.feedback.ok ? 'ok' : 'bad') + '">'
-                    + (session.feedback.ok ? '回答正确。' : '答案不对，正确结果是 ' + esc(q.answerText) + '。')
-                    + '<span>' + esc(q.method) + '</span><span>易错：' + esc(q.pitfall) + '</span></div>'
-                    + '<button class="btn practice-next" type="button" data-next-question>'
-                    + (session.index === session.questions.length - 1 ? '查看结果' : '下一题') + '</button>' : '');
-            return;
-        }
         const p = patternById[q.patternId];
         const options = q.options.map((opt, i) => {
             let cls = 'practice-option';
@@ -1039,7 +965,6 @@
         }
         const answerBtn = e.target.closest('[data-answer]');
         if (answerBtn) { answerQuestion(Number(answerBtn.dataset.answer)); return; }
-        if (e.target.closest('[data-calc-submit]')) { submitCalc(); return; }
         if (e.target.closest('[data-next-question]')) { nextQuestion(); return; }
         if (e.target.closest('[data-reset-stats]')) {
             state.stats = { attempted: 0, correct: 0, byType: {}, wrong: {} };

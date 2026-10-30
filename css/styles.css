@@ -1458,6 +1458,7 @@ footer { color: var(--muted); border-top: 1px solid var(--line); padding-top: 14
 .lesson-example { padding-left: 13px; border-left: 2px solid #d6dfd2; }
 .lesson-example-head { display: flex; gap: 9px; align-items: center; margin-bottom: 6px; }
 .lesson-example-head b { color: var(--text); font-family: var(--serif); font-size: 13px; font-weight: 600; }
+.lesson-source { margin: -2px 0 5px; color: var(--muted) !important; font-size: 10.5px !important; letter-spacing: .01em; }
 .lesson-problem { color: var(--text) !important; font-size: 12.5px !important; }
 .lesson-analysis { color: var(--text-secondary) !important; font-size: 12px !important; }
 .lesson-analysis b, .lesson-answer-line b, .lesson-link b, .lesson-pitfall b {

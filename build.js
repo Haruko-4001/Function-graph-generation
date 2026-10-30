@@ -35,7 +35,6 @@ const APP_FILES = [
     'js/player.js',
     'js/conic.js',
     'js/calculus.js',
-    'js/node-examples.js',
     'js/codecheck.js',
     'js/codegen.js',
     'js/manifest.js',
