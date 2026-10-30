@@ -19,11 +19,11 @@ const lesson = lessons['D-2'];
 
 console.log('\n[精讲样章：结构与内容]');
 
-test('第二章样章包含 3 节、3 道高考真题', () => {
+test('第二章样章包含 3 节、6 道高考真题', () => {
     assert(lesson, '缺少 D-2 样章');
     assert(lesson.sections.length === 3, '节数 ' + lesson.sections.length);
     const count = lesson.sections.reduce((n, s) => n + s.examples.length, 0);
-    assert(count === 3, '例题数 ' + count);
+    assert(count === 6, '例题数 ' + count);
 });
 
 test('每节都有正文、通法与例题', () => {
