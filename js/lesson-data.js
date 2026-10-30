@@ -17,6 +17,7 @@
     const lessons = {
         'D-2': {
             chapterId: 'D-2',
+            nodeId: 'E8',
             title: '妙话函数不等式',
             badge: '精讲样章',
             intro: '函数不等式不是一类题，而是一条链：移项 → 构造 → 求导 → 定号 → 取等。'

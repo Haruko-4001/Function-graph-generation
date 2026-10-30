@@ -152,7 +152,14 @@ try {
     await send('Runtime.enable');
     await send('Page.enable');
     await send('Page.navigate', { url: target });
-    await sleep(16000);
+    await sleep(4000);
+    // 首屏字体与 Plotly 初始化耗时随构建体积变化，轮询等待就绪，避免固定 sleep 误判
+    for (let i = 0; i < 40; i++) {
+        const ready = await evaluate(`typeof window.MathCore === 'object'
+            && !!document.querySelector('#graph-container .plotly')`);
+        if (ready) break;
+        await sleep(500);
+    }
 
     const boot = await evaluate(`({
         title: document.title,
@@ -231,22 +238,25 @@ try {
         await new Promise(r => setTimeout(r, 900));
         const expTraces = document.getElementById('experiment-chart').data
             ? document.getElementById('experiment-chart').data.length : -1;
-        document.querySelector('.learn-tab[data-learn-tab="books"]').click();
+        document.querySelector('.learn-tab[data-learn-tab="nodes"]').click();
         await new Promise(r => setTimeout(r, 300));
-        const chapters = document.querySelectorAll('[data-chapter]').length;
-        document.querySelector('[data-chapter="D-2"]').click();
+        document.querySelector('[data-node="E7"]').click();
         await new Promise(r => setTimeout(r, 300));
-        const topics = document.querySelectorAll('.book-topics li').length;
-        const lessonSecs = document.querySelectorAll('.lesson-sec').length;
-        const lessonExamples = document.querySelectorAll('.lesson-example').length;
+        const nodeExamples = document.querySelectorAll('.node-example').length;
+        const bookContext = document.querySelectorAll('.book-context-item').length;
+        document.querySelector('.learn-tab[data-learn-tab="practice"]').click();
+        await new Promise(r => setTimeout(r, 300));
+        document.querySelector('[data-start-practice="calc"]').click();
+        await new Promise(r => setTimeout(r, 300));
+        const calcRows = document.querySelectorAll('.calc-answer-row').length;
         document.getElementById('learn-close').click();
         await new Promise(r => setTimeout(r, 260));
-        return { groups, title, patterns, options, experiments, expTraces, chapters, topics, lessonSecs, lessonExamples, hidden: document.getElementById('learn-overlay').hidden };
+        return { groups, title, patterns, options, experiments, expTraces, nodeExamples, bookContext, calcRows, hidden: document.getElementById('learn-overlay').hidden };
     })()`);
-    check('知识地图与题型/自测/实验/书目可用',
+    check('知识地图与节点例题/书目融合/计算自测可用',
         learn.groups === 8 && learn.title.length > 0 && learn.patterns === 71
         && learn.options === 4 && learn.experiments === 7 && learn.expTraces >= 2
-        && learn.chapters === 15 && learn.topics === 10 && learn.lessonSecs === 3 && learn.lessonExamples === 7 && learn.hidden,
+        && learn.nodeExamples === 3 && learn.bookContext > 0 && learn.calcRows === 1 && learn.hidden,
         JSON.stringify(learn));
 
     check('运行期无异常', exceptions.length === 0, exceptions.slice(0, 3).join('\n'));

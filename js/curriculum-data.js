@@ -221,7 +221,7 @@
             stage: '高中拓展 / 大学', book: '高数 2.3–2.4', prereq: ['D6'],
             summary: '二阶导、隐函数求导、参数方程求导。',
             points: ['隐函数两边对 x 求导，把 y 看作 x 的函数', '参数方程 dy/dx=(dy/dt)/(dx/dt)'],
-            patterns: ['高阶/隐函数'], demo: 'x^3 + y^3 - 3*x*y'
+            patterns: ['高阶/隐函数'], demo: 'x^3 + y^3 - 3*x*y', exampleDemo: 'x^3 - 3*x'
         },
         E1: {
             title: '单调性判定与讨论',
