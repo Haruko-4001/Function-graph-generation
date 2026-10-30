@@ -17,8 +17,15 @@ function assert(cond, msg) { if (!cond) throw new Error(msg || '断言失败'); 
 
 const lesson = lessons['D-2'];
 const lesson1 = lessons['D-1'];
+const lesson3 = lessons['D-3'];
+const lesson4 = lessons['D-4'];
 
 console.log('\n[精讲样章：结构与内容]');
+
+test('第三、四章各 2 道高考真题', () => {
+    assert(lesson3 && lesson3.sections.reduce((n, s) => n + s.examples.length, 0) === 2, '第3章题数');
+    assert(lesson4 && lesson4.sections.reduce((n, s) => n + s.examples.length, 0) === 2, '第4章题数');
+});
 
 test('第一章包含 3 节、4 道高考真题', () => {
     assert(lesson1, '缺少 D-1 样章');
