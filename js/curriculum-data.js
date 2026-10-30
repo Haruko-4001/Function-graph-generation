@@ -23,6 +23,16 @@
         { id: 'H', title: '参数方程与极坐标', stage: '高中拓展 / 大学', nodes: ['H1', 'H2', 'H3'] }
     ];
 
+    // 学习中心展示用分组：A–D 合并为「基础知识」，其余模块各成一块。
+    // modules 仍保留 8 个底层模块，供题型、书目映射与测试使用。
+    const moduleGroups = [
+        { id: 'basic', title: '基础知识', note: '函数、性质、初等函数、导数运算', stage: '高中基础', modules: ['A', 'B', 'C', 'D'] },
+        { id: 'E', title: '导数应用', note: '单调、极值、不等式与零点', stage: '选择性必修二', modules: ['E'] },
+        { id: 'F', title: '极限与积分', note: '极限、中值定理、积分', stage: '大学 / 拓展', modules: ['F'] },
+        { id: 'G', title: '圆锥曲线', note: '定义、性质、运算与定点定值', stage: '选择性必修一', modules: ['G'] },
+        { id: 'H', title: '参数方程与极坐标', note: '参数化、极坐标与统一方程', stage: '拓展', modules: ['H'] }
+    ];
+
     const nodes = {
         A1: {
             title: '函数定义与三要素',
@@ -536,7 +546,7 @@
         { id: 'H-2', node: 'H2', text: '极坐标与直角坐标：x=ρcosθ，y=ρsinθ。', condition: '极点与原点重合、极轴与 x 轴正半轴重合', examUse: 'extension', pitfall: '忽略 ρ<0 的情形。' }
     ];
 
-    const data = { modules, nodes, conclusions };
+    const data = { modules, moduleGroups, nodes, conclusions };
     if (typeof module === 'object' && module.exports) module.exports = data;
     else root.MathCurriculum = data;
 }(typeof self !== 'undefined' ? self : this));

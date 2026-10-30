@@ -17,6 +17,7 @@
     const patternById = patternLib ? patternLib.byId : {};
     const bookLib = window.MathBooks || null;
     const books = bookLib ? bookLib.books : [];
+    const groups = data.moduleGroups || data.modules.map((m) => ({ id: m.id, title: m.title, stage: m.stage, modules: [m.id] }));
     const lessonLib = window.MathLessons || null;
     const lessons = lessonLib ? lessonLib.lessons : {};
 
@@ -253,8 +254,13 @@
 
     function renderTreeNodes() {
         const q = state.query.trim().toLowerCase();
-        const html = data.modules.map((m, index) => {
-            const nodes = m.nodes.filter((id) => {
+        const html = groups.map((g, index) => {
+            const all = [];
+            g.modules.forEach((mid) => {
+                const m = data.modules.filter((x) => x.id === mid)[0];
+                if (m) all.push.apply(all, m.nodes);
+            });
+            const nodes = all.filter((id) => {
                 if (!q) return true;
                 const n = data.nodes[id];
                 return (id + ' ' + n.title + ' ' + n.summary + ' ' + (n.patterns || []).join(' ')).toLowerCase().indexOf(q) >= 0;
@@ -268,9 +274,9 @@
                     + (state.studied[id] ? '<span class="learn-done" aria-label="已学">✓</span>' : '')
                     + '</button>';
             }).join('');
-            return '<details class="learn-group" ' + (q || index < 2 ? 'open' : '') + '>'
-                + '<summary><span class="learn-group-title">' + esc(m.id + ' · ' + m.title) + '</span>'
-                + '<span class="learn-group-stage">' + esc(m.stage) + ' · ' + nodes.length + ' 节</span></summary>'
+            return '<details class="learn-group" ' + (q || index === 0 ? 'open' : '') + '>'
+                + '<summary><span class="learn-group-title">' + esc(g.title) + '</span>'
+                + '<span class="learn-group-stage">' + esc(g.stage) + ' · ' + nodes.length + ' 节</span></summary>'
                 + '<div class="learn-nodes">' + items + '</div></details>';
         }).join('');
 
@@ -283,8 +289,8 @@
 
     function renderTreePatterns() {
         const q = state.query.trim().toLowerCase();
-        const html = data.modules.map((m) => {
-            const list = patterns.filter((p) => p.module === m.id && (!q
+        const html = groups.map((g) => {
+            const list = patterns.filter((p) => g.modules.indexOf(p.module) >= 0 && (!q
                 || (p.title + ' ' + p.signals + ' ' + p.variants.join(' ')).toLowerCase().indexOf(q) >= 0));
             if (!list.length) return '';
             const items = list.map((p) => '<button type="button" class="learn-node learn-pattern-node'
@@ -294,7 +300,7 @@
                 + '<span class="learn-pattern-count">' + p.variants.length + '</span>'
                 + '</button>').join('');
             return '<details class="learn-group" open><summary><span class="learn-group-title">'
-                + esc(m.id + ' · ' + m.title) + '</span><span class="learn-group-stage">' + list.length + ' 族</span></summary>'
+                + esc(g.title) + '</span><span class="learn-group-stage">' + list.length + ' 族</span></summary>'
                 + '<div class="learn-nodes">' + items + '</div></details>';
         }).join('');
         tree.innerHTML = '<div class="learn-progress"><div class="learn-progress-head"><span>题型库</span><b>'

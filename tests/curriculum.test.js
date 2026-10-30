@@ -20,8 +20,12 @@ const ids = Object.keys(data.nodes);
 
 console.log('\n[课程数据：规模]');
 
-test('8 个模块、62 个节点、90 个题型、60 条结论', () => {
-    assert(data.modules.length === 8, '模块数 ' + data.modules.length);
+test('8 个底层模块、5 个学习板块、62 个节点、90 个题型、60 条结论', () => {
+    assert(data.modules.length === 8, '底层模块数 ' + data.modules.length);
+    assert(data.moduleGroups.length === 5, '学习板块数 ' + data.moduleGroups.length);
+    const basic = data.moduleGroups[0];
+    const basicNodes = basic.modules.reduce((n, id) => n + data.modules.filter((m) => m.id === id)[0].nodes.length, 0);
+    assert(basicNodes === 28, '基础知识节点数 ' + basicNodes);
     assert(ids.length === 62, '节点数 ' + ids.length);
     let patterns = 0;
     ids.forEach((id) => { patterns += (data.nodes[id].patterns || []).length; });
