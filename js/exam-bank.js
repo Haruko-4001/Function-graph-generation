@@ -113,7 +113,94 @@
                 'x=2 为极小值点需 f″(2)≥0，即 2a−1≥0，所以 a≥1/2。'
             ],
             note: '先验证 f′(2)=0 是否自动成立，再由二阶导定极小，能省掉一次分类讨论。'
-        }
+        },
+        {
+            id: 'GK-2015-I-21-1',
+            source: '2015 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题（Ⅰ）',
+            kind: '高考真题',
+            topic: '切线方程与参数',
+            node: 'D3',
+            difficulty: '中档',
+            prompt: '已知函数 <code>f(x)=x<sup>3</sup>+a x+1/4</code>，g(x)=−ln x。当 x 轴为曲线 y=f(x) 的切线时，求 a 的值。',
+            answer: 'a = −3/4',
+            steps: [
+                'x 轴是曲线 y=f(x) 的切线 ⇒ 切点 x₀ 满足 f(x₀)=0 且 f′(x₀)=0。',
+                'f′(x)=3x<sup>2</sup>+a=0 ⇒ a=−3x₀<sup>2</sup>。',
+                '代入 f(x₀)=0：<code>x₀<sup>3</sup>−3x₀<sup>3</sup>+1/4=0</code> ⇒ x₀=1/2。',
+                '故 a=−3(1/2)<sup>2</sup>=−3/4。'
+            ],
+            note: '“x 轴为切线”同时给出两个条件：切点在轴上、切线斜率为 0，缺一不可。'
+        },
+        {
+            id: 'GK-2016-I-21',
+            source: '2016 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题',
+            kind: '高考真题',
+            topic: '零点个数与偏移',
+            node: 'E9',
+            difficulty: '压轴',
+            prompt: '已知函数 <code>f(x)=(x−2)e<sup>x</sup>+a(x−1)<sup>2</sup></code> 有两个零点。<br>（1）求 a 的取值范围；<br>（2）设 x<sub>1</sub>, x<sub>2</sub> 是两个零点，证明 <code>x<sub>1</sub>+x<sub>2</sub>&lt;2</code>。',
+            answer: '（1）a&gt;0；（2）由 f(2−x<sub>2</sub>)&lt;0 与 f 在 (−∞,1) 递减得证。',
+            steps: [
+                '<code>f′(x)=(x−1)(e<sup>x</sup>+2a)</code>。a≤0 时 x&lt;1 有 f&lt;0、x&gt;1 至多一个零点，不可能有两个。',
+                'a&gt;0 时 f 在 (−∞,1) 减、(1,+∞) 增，最小值 f(1)=−e&lt;0，两端趋于 +∞，故恰有两个零点。',
+                '（2）设 x<sub>1</sub>&lt;1&lt;x<sub>2</sub>。由 f(x<sub>2</sub>)=0 得 <code>a(x<sub>2</sub>−1)<sup>2</sup>=(2−x<sub>2</sub>)e<sup>x<sub>2</sub></sup></code>。',
+                '代入得 <code>f(2−x<sub>2</sub>)=e<sup>2−x<sub>2</sub></sup>[(2−x<sub>2</sub>)e<sup>2x<sub>2</sub>−2</sup>−x<sub>2</sub>]</code>，由 <code>(1−t)e<sup>2t</sup>&lt;1+t (t∈(0,1))</code> 得 f(2−x<sub>2</sub>)&lt;0。',
+                'f 在 (−∞,1) 递减，f(2−x<sub>2</sub>)&lt;f(x<sub>1</sub>)=0 ⇒ 2−x<sub>2</sub>&gt;x<sub>1</sub>，即 x<sub>1</sub>+x<sub>2</sub>&lt;2。'
+            ],
+            note: '偏移题的固定动作：把 x₁ 与 2−x₂ 放进同一单调区间，再用零点关系消参。'
+        },
+        {
+            id: 'GK-2014-21',
+            source: '2014 年普通高等学校招生全国统一考试（全国卷·理科）数学 · 第 21 题',
+            kind: '高考真题',
+            topic: '抛物线焦半径与焦点弦',
+            node: 'G5',
+            difficulty: '压轴',
+            prompt: '已知抛物线 <code>C:y<sup>2</sup>=2px (p&gt;0)</code> 的焦点为 F，直线 y=4 与 y 轴的交点为 P，与 C 的交点为 Q，且 <code>|QF|=(5/4)|PQ|</code>。<br>（1）求 C 的方程；<br>（2）过 F 的直线 l 与 C 相交于 A、B，若 AB 的垂直平分线 l′ 与 C 相交于 M、N，且 A、M、B、N 四点共圆，求 l 的方程。',
+            answer: '（1）y<sup>2</sup>=4x；（2）<code>x−y−1=0</code> 或 <code>x+y−1=0</code>。',
+            steps: [
+                '（1）设 Q(x₀,4)，则 x₀=8/p，<code>|PQ|=8/p</code>，<code>|QF|=8/p+p/2</code>。',
+                '由 <code>|QF|=(5/4)|PQ|</code> 得 8/p+p/2=10/p ⇒ p=2，故 C: y<sup>2</sup>=4x。',
+                '（2）设 l: <code>x=my+1</code>，代入得 <code>y<sup>2</sup>−4my−4=0</code>，由韦达定理 <code>y<sub>1</sub>+y<sub>2</sub>=4m, y<sub>1</sub>y<sub>2</sub>=−4</code>，<code>|AB|=4(m<sup>2</sup>+1)</code>。',
+                'l′ 斜率为 −m，同样代入求出 |MN| 与中点；由 A、M、B、N 共圆等价于以 AB、FN 中点为圆心半径相等，化简得 m<sup>2</sup>=1。',
+                '故 l: <code>x−y−1=0</code> 或 <code>x+y−1=0</code>。'
+            ],
+            note: '焦半径公式 |PF|=x+p/2 能把焦点条件直接变成横坐标条件，是抛物线题的通用入口。'
+        },
+        {
+            id: 'GK-2017-I-22-1',
+            source: '2017 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 22 题（1）',
+            kind: '高考真题',
+            topic: '参数方程与直线',
+            node: 'H1',
+            difficulty: '基础',
+            prompt: '在直角坐标系 xOy 中，曲线 C 的参数方程为 <code>x=3cosθ, y=sinθ</code>，直线 l 的参数方程为 <code>x=a+4t, y=1−t</code>。当 a=−1 时，求 C 与 l 的交点坐标。',
+            answer: '交点为 (3, 0) 与 (−21/25, 24/25)',
+            steps: [
+                'C 消参得 <code>x<sup>2</sup>/9+y<sup>2</sup>=1</code>；l 消参得 <code>x+4y=3</code>（a=−1）。',
+                '把 x=3−4y 代入椭圆：<code>(3−4y)<sup>2</sup>/9+y<sup>2</sup>=1</code> ⇒ 25y<sup>2</sup>−24y=0。',
+                'y=0 时 x=3；y=24/25 时 x=−21/25。',
+                '故交点为 (3, 0) 与 (−21/25, 24/25)。'
+            ],
+            note: '参数方程题的标准动作：先把参数方程化为直线方程，再联立消参。'
+        },
+        {
+            id: 'GK-2019-I-21-1',
+            source: '2019 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题（1）',
+            kind: '高考真题',
+            topic: '轨迹方程与圆锥曲线',
+            node: 'G1',
+            difficulty: '中档',
+            prompt: '已知点 A(−2,0)，B(2,0)，动点 M(x,y) 满足直线 AM 与 BM 的斜率之积为 −1/2，记 M 的轨迹为曲线 C。求 C 的方程，并说明 C 是什么曲线。',
+            answer: 'C：<code>x<sup>2</sup>/4 + y<sup>2</sup>/2 = 1</code>，是焦点在 y 轴上的椭圆。',
+            steps: [
+                '<code>k<sub>AM</sub>·k<sub>BM</sub> = y²/[(x+2)(x−2)] = −1/2</code>。',
+                '整理得 <code>2y<sup>2</sup> = 4−x<sup>2</sup></code>，即 <code>x<sup>2</sup>/4 + y<sup>2</sup>/2 = 1</code>。',
+                '与标准式比较：长轴在 y 轴上，a<sup>2</sup>=2，b<sup>2</sup>=4，c<sup>2</sup>=2。',
+                '故 C 是焦点在 y 轴上、离心率 e=√2/2 的椭圆。'
+            ],
+            note: '斜率之积型轨迹：乘开分母直接得到二次曲线，再对照标准式判断焦点位置。'
+        },
     ];
 
     return { items };

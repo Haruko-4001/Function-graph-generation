@@ -17,8 +17,8 @@ function assert(cond, msg) { if (!cond) throw new Error(msg || '断言失败'); 
 
 console.log('\n[真题题库：来源与字段]');
 
-test('题库含 6 道独立收录的真题与模拟卷', () => {
-    assert(items.length === 6, '题量 ' + items.length);
+test('题库含 11 道独立收录的真题与模拟卷', () => {
+    assert(items.length === 11, '题量 ' + items.length);
 });
 
 test('每题都有来源、难度、题干、答案与思路', () => {

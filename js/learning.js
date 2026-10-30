@@ -21,6 +21,11 @@
     const lessonLib = window.MathLessons || null;
     const lessons = lessonLib ? lessonLib.lessons : {};
     const examBankRaw = window.MathExamBank ? window.MathExamBank.items : [];
+    const mergeLib = window.MathNodeMerge || {
+        merged: {}, reason: {}, target: function (id) { return id; },
+        isMerged: function () { return false; }, hostOf: function () { return []; }
+    };
+    const Core = window.MathCore || null;
 
     const $ = (id) => document.getElementById(id);
     const overlay = $('learn-overlay');
@@ -229,8 +234,15 @@
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    function conclusionsOf(id) { return data.conclusions.filter((c) => c.node === id); }
-    function patternsOf(id) { return patterns.filter((p) => p.node === id); }
+    function hostIds(id) { return [id].concat(mergeLib.hostOf(id)); }
+    function conclusionsOf(id) {
+        const ids = hostIds(id);
+        return data.conclusions.filter((c) => ids.indexOf(c.node) >= 0);
+    }
+    function patternsOf(id) {
+        const ids = hostIds(id);
+        return patterns.filter((p) => ids.indexOf(p.node) >= 0);
+    }
     function studiedCount() { return Object.keys(state.studied).filter((id) => data.nodes[id]).length; }
 
     function shuffle(list) {
@@ -263,6 +275,7 @@
                 if (m) all.push.apply(all, m.nodes);
             });
             const nodes = all.filter((id) => {
+                if (mergeLib.isMerged(id)) return false;
                 if (!q) return true;
                 const n = data.nodes[id];
                 return (id + ' ' + n.title + ' ' + n.summary + ' ' + (n.patterns || []).join(' ')).toLowerCase().indexOf(q) >= 0;
@@ -327,10 +340,7 @@
             + '</div>'
             + '<div class="learn-filter">'
             + '<button class="learn-filter-btn" data-start-practice="exam">真题演练</button>'
-            + '<button class="learn-filter-btn" data-start-practice="mixed">方法复习</button>'
-            + '<button class="learn-filter-btn" data-start-practice="identify">识别专项</button>'
-            + '<button class="learn-filter-btn" data-start-practice="method">方法专项</button>'
-            + '<button class="learn-filter-btn" data-start-practice="pitfall">错因专项</button>'
+            + '<button class="learn-filter-btn" data-start-practice="exam-all">全真题池（30 题）</button>'
             + '</div>'
             + '<p class="learn-side-note">真题演练：已练 ' + (s.exam ? s.exam.asked : 0) + ' 题，掌握 '
                 + (s.exam ? s.exam.mastered : 0) + ' 题</p>'
@@ -426,6 +436,22 @@
             return n ? '<button type="button" class="learn-link" data-node="' + esc(p) + '">' + esc(p + ' ' + n.title) + '</button>' : '';
         }).join('');
         const selected = state.selected.has(id);
+        const methodSteps = [];
+        pats.slice(0, 3).forEach((p) => {
+            (p.steps || []).forEach((st) => {
+                if (methodSteps.indexOf(st) < 0) methodSteps.push(st);
+            });
+        });
+        const methodHtml = methodSteps.length
+            ? '<ol class="learn-method">' + methodSteps.slice(0, 6).map((st) => '<li>' + esc(st) + '</li>').join('') + '</ol>'
+            : '<p class="learn-empty">这个节点的通法随关联题型给出。</p>';
+        const hosts = mergeLib.hostOf(id);
+        const hostHtml = hosts.length
+            ? '<p class="learn-merged">已并入：' + hosts.map((hid) => {
+                const hn = data.nodes[hid];
+                return esc(hid + (hn ? ' ' + hn.title : '') + '——' + (mergeLib.reason[hid] || '内容较单薄'));
+            }).join('；') + '</p>'
+            : '';
 
         const consHtml = cons.length ? cons.map(conclusionHtml).join('')
             : '<p class="learn-empty">这个节点暂时只有要点，还没有独立结论卡。</p>';
@@ -440,6 +466,9 @@
             + '</div>'
             + '<section class="learn-section"><h4>关键结论</h4>' + consHtml + '</section>'
             + '<section class="learn-section"><h4>要点</h4><ul class="learn-points">' + points + '</ul></section>'
+            + hostHtml
+            + '<section class="learn-section"><h4>通法</h4>' + methodHtml + '</section>'
+            + '<section class="learn-section"><h4>例题 · 3–4 道</h4>' + nodeExamplesHtml(id) + '</section>'
             + (chips ? '<section class="learn-section"><h4>关联题型</h4><div class="learn-chips">' + chips + '</div></section>' : '')
             + '<section class="learn-section"><h4>书目定位</h4>' + bookContextHtml(id) + '</section>'
             + (prereq ? '<section class="learn-section"><h4>前置知识</h4><div class="learn-chips">' + prereq + '</div></section>' : '')
@@ -452,12 +481,23 @@
         card.scrollTop = 0;
     }
 
+    function conclusionUsage(c) {
+        const ps = patternsOf(c.node);
+        const steps = [];
+        ps.slice(0, 2).forEach((p) => {
+            (p.steps || []).forEach((s) => { if (steps.indexOf(s) < 0) steps.push(s); });
+        });
+        if (!steps.length) steps.push('先核对结论的适用条件，再把题目数据代入，不要跳过条件验证。');
+        return steps.slice(0, 4);
+    }
+
     function conclusionHtml(c) {
+        const usage = conclusionUsage(c).map((s) => '<li>' + esc(s) + '</li>').join('');
         return '<article class="learn-conclusion">'
             + '<div class="learn-conclusion-head"><span class="tag">' + esc(EXAM_LABEL[c.examUse] || c.examUse) + '</span>'
             + '<span class="learn-conclusion-id">' + esc(c.id) + '</span></div>'
-            + '<p class="learn-claim">' + esc(c.text) + '</p>'
-            + '<p class="learn-meta"><b>条件</b>' + esc(c.condition) + '</p>'
+            + '<p class="learn-claim-form">当 <b>' + esc(c.condition) + '</b> 时 ⇒ <b>' + esc(c.text) + '</b></p>'
+            + '<div class="learn-usage"><b>做题用法</b><ol>' + usage + '</ol></div>'
             + '<p class="learn-meta pitfall"><b>易错</b>' + esc(c.pitfall) + '</p>'
             + '</article>';
     }
@@ -626,9 +666,9 @@
     }
 
     function startPractice(kind, patternId) {
-        if (kind === 'exam') {
+        if (kind === 'exam' || kind === 'exam-all') {
             const pool = buildExamPool();
-            const questions = shuffle(pool).slice(0, 10);
+            const questions = kind === 'exam-all' ? shuffle(pool).slice(0, 30) : shuffle(pool).slice(0, 10);
             session = { mode: 'exam', questions, index: 0, answers: [], wrong: [], finished: false, feedback: null, showSteps: false, showAnswer: false, rated: null };
             state.tab = 'practice';
             render();
@@ -700,10 +740,8 @@
                 + '方法复习：由 ' + patterns.length + ' 个题型族生成识别/通法/错因三类题。每次 10 题。</p></div>'
                 + '<section class="learn-section learn-practice-start">'
                 + '<button class="btn" data-start-practice="exam">开始真题演练（10 题）</button>'
-                + '<button class="btn ghost" data-start-practice="mixed">方法复习 10 题</button>'
-                + '<button class="btn ghost" data-start-practice="identify">只练识别</button>'
-                + '<button class="btn ghost" data-start-practice="method">只练方法</button>'
-                + '<button class="btn ghost" data-start-practice="pitfall">只练错因</button>'
+                + '<button class="btn ghost" data-start-practice="exam-all">全真题池（30 题）</button>'
+                + '<p class="learn-summary">题库只收各地高考真题与模拟卷：每题标注卷别、题号与难度，可先看思路再看答案，再自评掌握程度。</p>'
                 + '</section>'
                 + '<section class="learn-section"><h4>累计</h4><p class="learn-summary">已答 ' + s.attempted
                 + ' 题，答对 ' + s.correct + ' 题' + (s.attempted ? '，正确率 ' + Math.round(s.correct / s.attempted * 100) + '%' : '') + '。</p></section>';
@@ -807,10 +845,96 @@
                 + (session.index === session.questions.length - 1 ? '查看结果' : '下一题') + '</button>' : '');
     }
 
+    /* ---------------- 节点例题 ---------------- */
+
+    function calcVariants(nodeId) {
+        const node = data.nodes[nodeId];
+        if (!node || !Core || !node.demo) return [];
+        const expr = String(node.demo);
+        if (expr.indexOf('|') >= 0 || expr.indexOf(';') >= 0) return [];
+        const out = [];
+        try {
+            const f = Core.makeFunction(expr, ['x']);
+            const zeros = Core.findZeros(f, -10, 10, { samples: 1200 }).length;
+            out.push({
+                kind: '计算实战', source: '基于本节点示例函数 · ' + expr, difficulty: '基础',
+                prompt: '求 <code>f(x)=' + esc(expr) + '</code> 在 [−10,10] 上的零点个数。',
+                answer: zeros + ' 个',
+                steps: ['先写定义域，再在区间内找变号点与切触点；每个单调区间至多一个零点。']
+            });
+        } catch (e) { /* 跳过不可解析的示例 */ }
+        try {
+            const r = Core.analyzeFunction(expr, { xMin: -10, xMax: 10 });
+            out.push({
+                kind: '计算实战', source: '基于本节点示例函数 · ' + expr, difficulty: '基础',
+                prompt: '求 <code>f(x)=' + esc(expr) + '</code> 在 [−10,10] 上的单调区间个数。',
+                answer: r.monotonic.length + ' 个',
+                steps: ['求导 → 解 f′=0 → 按根把定义域分段 → 逐段判断符号。']
+            });
+            out.push({
+                kind: '计算实战', source: '基于本节点示例函数 · ' + expr, difficulty: '基础',
+                prompt: '求 <code>f(x)=' + esc(expr) + '</code> 在 [−10,10] 上的极值点个数。',
+                answer: (r.extrema.maxima.length + r.extrema.minima.length) + ' 个',
+                steps: ['解 f′(x)=0，并检查左右是否变号；只有变号点才是极值点。']
+            });
+        } catch (e) { /* 跳过不可解析的示例 */ }
+        return out;
+    }
+
+    function nodeExampleItems(nodeId) {
+        const list = [];
+        examBankRaw.forEach((it) => {
+            if (mergeLib.target(it.node) !== nodeId) return;
+            list.push({
+                kind: it.kind, source: it.source, difficulty: it.difficulty,
+                prompt: it.prompt, answer: it.answer, steps: it.steps
+            });
+        });
+        Object.keys(lessons).forEach((ch) => {
+            const L = lessons[ch];
+            if (mergeLib.target(L.nodeId) !== nodeId) return;
+            L.sections.forEach((sec) => sec.examples.forEach((ex) => {
+                list.push({
+                    kind: '精讲例题', source: ex.source, difficulty: '同例题',
+                    prompt: ex.problem, answer: ex.answer, steps: ex.steps
+                });
+            }));
+        });
+        calcVariants(nodeId).forEach((t) => list.push(t));
+        return list.slice(0, 4);
+    }
+
+    function nodeExamplesHtml(nodeId) {
+        const items = nodeExampleItems(nodeId);
+        if (!items.length) return '<p class="learn-empty">这个节点的例题正在补充中。</p>';
+        return '<div class="node-examples">' + items.map((it, i) => {
+            const steps = (it.steps || []).map((x) => '<li>' + x + '</li>').join('');
+            return '<article class="node-example">'
+                + '<div class="node-example-head"><span class="tag">例 ' + (i + 1) + '</span>'
+                + '<span class="tag ghost">' + esc(it.kind) + '</span>'
+                + '<span class="tag ghost">' + esc(it.difficulty || '中档') + '</span></div>'
+                + '<p class="node-example-source">来源：' + esc(it.source) + '</p>'
+                + '<p class="node-example-problem">' + it.prompt + '</p>'
+                + '<details class="node-example-detail"><summary>查看解析与答案</summary>'
+                + (steps ? '<ol class="lesson-steps">' + steps + '</ol>' : '')
+                + '<p class="node-example-answer">' + it.answer + '</p>'
+                + '</details></article>';
+        }).join('') + '</div>';
+    }
+
     /* ---------------- 真题演练 ---------------- */
 
     function buildExamPool() {
         const pool = examBankRaw.map((it) => Object.assign({ origin: 'bank' }, it));
+        Object.keys(data.nodes).forEach((nid) => {
+            if (mergeLib.isMerged(nid)) return;
+            calcVariants(nid).forEach((v, i) => {
+                pool.push(Object.assign({
+                    id: 'CALC-' + nid + '-' + i, kind: '计算实战', topic: data.nodes[nid].title,
+                    node: nid, difficulty: v.difficulty, mode: '计算型', steps: v.steps, note: v.steps[0]
+                }, v));
+            });
+        });
         Object.keys(lessons).forEach((ch) => {
             const L = lessons[ch];
             L.sections.forEach((sec) => {
@@ -1039,7 +1163,7 @@
         if (tab) { switchTab(tab.dataset.learnTab); return; }
 
         const nodeBtn = e.target.closest('[data-node]');
-        if (nodeBtn) { state.nodeId = nodeBtn.dataset.node; state.tab = 'nodes'; render(); return; }
+        if (nodeBtn) { state.nodeId = mergeLib.target(nodeBtn.dataset.node); state.tab = 'nodes'; render(); return; }
 
         const patternBtn = e.target.closest('[data-pattern]');
         if (patternBtn) { state.patternId = patternBtn.dataset.pattern; state.tab = 'patterns'; render(); return; }

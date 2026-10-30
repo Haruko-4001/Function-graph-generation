@@ -14,7 +14,7 @@
   "license": "MIT",
   "type": "commonjs",
   "scripts": {
-    "test": "node tests/math-core.test.js && node tests/assistant.test.js && node tests/storyboard.test.js && node tests/export.test.js && node tests/conic.test.js && node tests/calculus.test.js && node tests/curriculum.test.js && node tests/pattern.test.js && node tests/book.test.js && node tests/lesson.test.js && node tests/exam-bank.test.js",
+    "test": "node tests/math-core.test.js && node tests/assistant.test.js && node tests/storyboard.test.js && node tests/export.test.js && node tests/conic.test.js && node tests/calculus.test.js && node tests/curriculum.test.js && node tests/pattern.test.js && node tests/book.test.js && node tests/lesson.test.js && node tests/exam-bank.test.js && node tests/node-merge.test.js",
     "build": "node build.js",
     "build:offline": "node build.js --offline",
     "smoke": "node scripts/smoke.mjs",
