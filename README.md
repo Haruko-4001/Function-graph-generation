@@ -96,6 +96,9 @@ python plot_xp2_4.py      # 出图 + 打印每条结论的残差
 **书目融合**：《导数的秘密》十章、《圆锥曲线的秘密》五章的全部小节已拆到对应知识节点；
 节点卡内展开「书目定位」即可查看章节摘要与小节清单，不再保留独立书目页。
 
+**真题演练**：题库收录各地高考真题与模拟卷，每题标注卷别、题号、难度与关联节点；
+抽题后可先看思路再看答案，再自评「会 / 半会 / 不会」，掌握情况本地累计。与精讲例题同源同难度，做到讲练结合。
+
 **交互实验**：7 个实时演示——割线→切线、切线与法线、函数与导数符号、椭圆定义、
 离心率与形状、参数扫描、面积累积。全部在浏览器内计算，可拖动参数观察变化。
 
@@ -144,7 +147,7 @@ npx serve .
 
 | 命令 | 作用 |
 |---|---|
-| `npm test` | 163 个单元测试（含真跑导出的 Python） |
+| `npm test` | 164 个单元测试（含真跑导出的 Python） |
 | `npm run build` / `build:offline` | 单文件版 / 离线版 |
 | `npm run smoke` | 浏览器端到端冒烟（自动找 Chrome/Edge） |
 | `npm run mcp` | 启动 MCP 服务器（stdio） |
@@ -162,7 +165,7 @@ npx serve .
 把 `index.html + css + js` 打包成一个自包含 HTML：
 
 ```bash
-npm run build            # 生成 dist/math-function-visualizer.html（约 562 KB，库走 CDN）
+npm run build            # 生成 dist/math-function-visualizer.html（约 578 KB，库走 CDN）
 npm run build:offline    # 生成离线版（约 4.7 MB，完全不联网也能用）
 ```
 
@@ -210,6 +213,7 @@ math_function2.0/
 │   ├── pattern-data.js # 71 个题型族 / 90 个子型
 │   ├── book-data.js   # 两本专著 15 章完整书目与题型映射
 │   ├── lesson-data.js # 两本专著十五章（32 道高考真题）
+│   ├── exam-bank.js  # 真题题库（各地高考卷 + 模拟卷）
 │   ├── learning.js     # 知识地图、搜索与实验室联动
 │   ├── ui.js           # 应用控制器（状态/校验/报告/导出/分享）
 │   ├── motion.js       # 克制的入场/切换动效（尊重减少动态偏好）
@@ -281,7 +285,7 @@ math_function2.0/
 
 ```bash
 npm install   # 仅需 mathjs（测试用）
-npm test      # 163 个用例：核心 44 + 助手 28 + 分镜 19 + 导出 20 + 圆锥 14 + 导数 9 + 课程 9 + 题型 5 + 书目 5 + 样章 10
+npm test      # 164 个用例：核心 44 + 助手 28 + 分镜 19 + 导出 20 + 圆锥 14 + 导数 9 + 课程 9 + 题型 5 + 书目 5 + 样章 10 + 题库 5
 npm run smoke # 浏览器端到端（自动找本机 Chrome/Edge，找不到则跳过）
 ```
 

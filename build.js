@@ -30,6 +30,7 @@ const APP_FILES = [
     'js/pattern-data.js',
     'js/book-data.js',
     'js/lesson-data.js',
+    'js/exam-bank.js',
     'js/facts.js',
     'js/storyboard.js',
     'js/player.js',

@@ -20,6 +20,7 @@
     const groups = data.moduleGroups || data.modules.map((m) => ({ id: m.id, title: m.title, stage: m.stage, modules: [m.id] }));
     const lessonLib = window.MathLessons || null;
     const lessons = lessonLib ? lessonLib.lessons : {};
+    const examBankRaw = window.MathExamBank ? window.MathExamBank.items : [];
 
     const $ = (id) => document.getElementById(id);
     const overlay = $('learn-overlay');
@@ -196,6 +197,7 @@
         saved.stats = saved.stats || { attempted: 0, correct: 0, byType: {}, wrong: {} };
         saved.stats.byType = saved.stats.byType || {};
         saved.stats.wrong = saved.stats.wrong || {};
+        saved.stats.exam = saved.stats.exam || { asked: 0, mastered: 0, partial: 0, missed: 0 };
         return {
             tab: 'nodes',
             nodeId: 'A1',
@@ -324,11 +326,16 @@
             + '<div><b>' + rate + '%</b><span>正确率</span></div>'
             + '</div>'
             + '<div class="learn-filter">'
+            + '<button class="learn-filter-btn" data-start-practice="exam">真题演练</button>'
             + '<button class="learn-filter-btn" data-start-practice="mixed">方法复习</button>'
             + '<button class="learn-filter-btn" data-start-practice="identify">识别专项</button>'
             + '<button class="learn-filter-btn" data-start-practice="method">方法专项</button>'
             + '<button class="learn-filter-btn" data-start-practice="pitfall">错因专项</button>'
             + '</div>'
+            + '<p class="learn-side-note">真题演练：已练 ' + (s.exam ? s.exam.asked : 0) + ' 题，掌握 '
+                + (s.exam ? s.exam.mastered : 0) + ' 题</p>'
+            + '<p class="learn-side-note">真题演练：已练 ' + (s.exam ? s.exam.asked : 0) + ' 题，掌握 '
+                + (s.exam ? s.exam.mastered : 0) + ' 题</p>'
             + '<button class="learn-reset" type="button" data-reset-stats>清空练习统计</button>'
             + (Object.keys(s.wrong).length ? '<p class="learn-side-note">薄弱题型：'
                 + Object.keys(s.wrong).sort((a, b) => s.wrong[b] - s.wrong[a]).slice(0, 4)
@@ -619,6 +626,15 @@
     }
 
     function startPractice(kind, patternId) {
+        if (kind === 'exam') {
+            const pool = buildExamPool();
+            const questions = shuffle(pool).slice(0, 10);
+            session = { mode: 'exam', questions, index: 0, answers: [], wrong: [], finished: false, feedback: null, showSteps: false, showAnswer: false, rated: null };
+            state.tab = 'practice';
+            render();
+            card.scrollTop = 0;
+            return;
+        }
         let questions = [];
         if (kind === 'pattern' && patternById[patternId]) {
             ['identify', 'method', 'pitfall'].forEach((type) => {
@@ -669,6 +685,9 @@
         }
         session.index++;
         session.feedback = null;
+        session.showSteps = false;
+        session.showAnswer = false;
+        session.rated = null;
         renderPractice();
         card.scrollTop = 0;
     }
@@ -677,10 +696,11 @@
         if (!session) {
             const s = state.stats;
             card.innerHTML = '<div class="learn-card-head"><div class="learn-badges"><span class="tag">三层自测</span></div>'
-                + '<h3>方法复习</h3><p class="learn-summary">题目由 ' + patterns.length
-                + ' 个题型族生成：先认题型，再选通法，最后避开易错点。每次 10 题。真题计算自测将在题库扩充后接入。</p></div>'
+                + '<h3>自测与真题演练</h3><p class="learn-summary">真题演练：抽题自各地高考真题与模拟卷，标注卷别题号，可查思路与答案，再自评掌握程度；'
+                + '方法复习：由 ' + patterns.length + ' 个题型族生成识别/通法/错因三类题。每次 10 题。</p></div>'
                 + '<section class="learn-section learn-practice-start">'
-                + '<button class="btn" data-start-practice="mixed">开始方法复习 10 题</button>'
+                + '<button class="btn" data-start-practice="exam">开始真题演练（10 题）</button>'
+                + '<button class="btn ghost" data-start-practice="mixed">方法复习 10 题</button>'
                 + '<button class="btn ghost" data-start-practice="identify">只练识别</button>'
                 + '<button class="btn ghost" data-start-practice="method">只练方法</button>'
                 + '<button class="btn ghost" data-start-practice="pitfall">只练错因</button>'
@@ -705,6 +725,21 @@
                 return t.attempted ? '<div class="deriv-row"><span class="k">' + TYPE_LABEL[type] + '</span><span>'
                     + t.correct + '/' + t.attempted + '（' + Math.round(t.correct / t.attempted * 100) + '%）</span></div>' : '';
             }).join('');
+            if (session.mode === 'exam') {
+                const st = state.stats.exam;
+                card.innerHTML = '<div class="learn-card-head"><div class="learn-badges"><span class="tag">本轮完成</span></div>'
+                    + '<h3>掌握 ' + session.answers.filter((a) => a === 'yes').length + ' / ' + total + '</h3>'
+                    + '<p class="learn-summary">本轮自评：会 ' + session.answers.filter((a) => a === 'yes').length
+                    + ' 题，半会 ' + session.answers.filter((a) => a === 'part').length
+                    + ' 题，不会 ' + session.answers.filter((a) => a === 'no').length + ' 题。</p></div>'
+                    + '<section class="learn-section"><h4>累计</h4><p class="learn-summary">已练 ' + st.asked + ' 题，掌握 ' + st.mastered
+                    + ' 题，半会 ' + st.partial + ' 题，不会 ' + st.missed + ' 题。</p></section>'
+                    + '<section class="learn-section learn-actions">'
+                    + '<button class="btn" data-start-practice="exam">再来一轮</button>'
+                    + '<button class="btn ghost" data-start-practice="mixed">方法复习</button>'
+                    + '</section>';
+                return;
+            }
             card.innerHTML = '<div class="learn-card-head"><div class="learn-badges"><span class="tag">本轮完成</span></div>'
                 + '<h3>' + right + ' / ' + total + '</h3><p class="learn-summary">正确率 '
                 + Math.round(right / total * 100) + '%。' + (session.wrong.length ? '下面这些题型需要回看。' : '全部答对。') + '</p></div>'
@@ -717,6 +752,36 @@
             return;
         }
 
+        if (session.mode === 'exam') {
+            const q = session.questions[session.index];
+            const node = data.nodes[q.node];
+            const steps = (q.steps || []).map((x) => '<li>' + x + '</li>').join('');
+            const rate = session.rated;
+            card.innerHTML = '<div class="learn-card-head"><div class="learn-badges">'
+                + '<span class="tag">第 ' + (session.index + 1) + ' / ' + session.questions.length + ' 题</span>'
+                + '<span class="tag ghost">' + esc(q.kind || '真题') + '</span>'
+                + '<span class="tag ghost">' + esc(q.difficulty || '中档') + '</span>'
+                + '</div><h3>' + esc(q.mode || '练习') + '</h3>'
+                + '<p class="learn-source-line">来源：' + esc(q.source) + '</p>'
+                + '<p class="learn-source-line">考点：' + esc(q.topic || '') + (node ? ' · 关联节点 ' + esc(node.title) : '') + '</p></div>'
+                + '<section class="learn-section exam-item"><p class="exam-prompt">' + q.prompt + '</p>'
+                + '<div class="exam-actions">'
+                + '<button class="btn ghost" type="button" data-exam-reveal="steps">查看思路</button>'
+                + '<button class="btn ghost" type="button" data-exam-reveal="answer">查看答案</button>'
+                + '</div>'
+                + (session.showSteps ? '<div class="exam-block"><b>思路</b><ol class="lesson-steps">' + steps + '</ol></div>' : '')
+                + (session.showAnswer ? '<div class="exam-block answer"><b>答案</b>' + q.answer + (q.note ? '<p class="lesson-pitfall">' + q.note + '</p>' : '') + '</div>' : '')
+                + '<div class="exam-rate"><span>自评：</span>'
+                + ['yes:会', 'part:半会', 'no:不会'].map((x) => {
+                    const v = x.split(':');
+                    return '<button type="button" class="learn-filter-btn' + (rate === v[0] ? ' active' : '') + '" data-exam-rate="' + v[0] + '"' + (rate ? ' disabled' : '') + '>' + v[1] + '</button>';
+                }).join('')
+                + '</div>'
+                + (rate ? '<button class="btn practice-next" type="button" data-next-question>'
+                    + (session.index === session.questions.length - 1 ? '查看结果' : '下一题') + '</button>' : '')
+                + '</section>';
+            return;
+        }
         const q = session.questions[session.index];
         const p = patternById[q.patternId];
         const options = q.options.map((opt, i) => {
@@ -740,6 +805,51 @@
                 + '<span>' + esc(q.explain) + '</span></div>'
                 + '<button class="btn practice-next" type="button" data-next-question>'
                 + (session.index === session.questions.length - 1 ? '查看结果' : '下一题') + '</button>' : '');
+    }
+
+    /* ---------------- 真题演练 ---------------- */
+
+    function buildExamPool() {
+        const pool = examBankRaw.map((it) => Object.assign({ origin: 'bank' }, it));
+        Object.keys(lessons).forEach((ch) => {
+            const L = lessons[ch];
+            L.sections.forEach((sec) => {
+                sec.examples.forEach((ex) => {
+                    const base = {
+                        source: ex.source, kind: '高考真题', topic: sec.title, node: L.nodeId,
+                        chapter: L.chapterId, sectionId: sec.id, difficulty: '同例题',
+                        origin: 'derived', exampleId: ex.id, steps: ex.steps, note: ex.pitfall
+                    };
+                    pool.push(Object.assign({}, base, {
+                        id: ex.id + '-c', mode: '结论型',
+                        prompt: ex.problem + '<br><b>本题要得到的结论是什么？</b>',
+                        answer: ex.answer
+                    }));
+                    pool.push(Object.assign({}, base, {
+                        id: ex.id + '-m', mode: '方法型',
+                        prompt: '不解出最终结果，说明本题的关键一步是什么：<br>' + ex.problem,
+                        answer: ex.analysis
+                    }));
+                });
+            });
+        });
+        return pool;
+    }
+
+    function rateExam(rate) {
+        if (!session || session.mode !== 'exam' || session.finished || session.rated) return;
+        const q = session.questions[session.index];
+        session.rated = rate;
+        session.answers.push(rate);
+        if (rate !== 'yes') session.wrong.push(q);
+        const st = state.stats.exam;
+        st.asked++;
+        if (rate === 'yes') st.mastered++;
+        else if (rate === 'part') st.partial++;
+        else st.missed++;
+        persist();
+        renderSidebar();
+        renderPractice();
     }
 
     /* ---------------- 交互实验 ---------------- */
@@ -971,6 +1081,15 @@
         }
         const answerBtn = e.target.closest('[data-answer]');
         if (answerBtn) { answerQuestion(Number(answerBtn.dataset.answer)); return; }
+        const revealBtn = e.target.closest('[data-exam-reveal]');
+        if (revealBtn) {
+            if (revealBtn.dataset.examReveal === 'steps') session.showSteps = true;
+            else session.showAnswer = true;
+            renderPractice();
+            return;
+        }
+        const rateBtn = e.target.closest('[data-exam-rate]');
+        if (rateBtn) { rateExam(rateBtn.dataset.examRate); return; }
         if (e.target.closest('[data-next-question]')) { nextQuestion(); return; }
         if (e.target.closest('[data-reset-stats]')) {
             state.stats = { attempted: 0, correct: 0, byType: {}, wrong: {} };
