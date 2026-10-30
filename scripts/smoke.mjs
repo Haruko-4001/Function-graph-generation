@@ -258,7 +258,7 @@ try {
     check('知识地图与书目融合/真题样章可用',
         learn.groups === 5 && learn.title.length > 0 && learn.patterns === 71
         && learn.options === 4 && learn.experiments === 7 && learn.expTraces >= 2
-        && learn.bookContext > 0 && learn.examExamples === 6 && learn.examSources === 6 && learn.lessonSecs === 3
+        && learn.bookContext > 0 && learn.examExamples === 8 && learn.examSources === 8 && learn.lessonSecs === 4
         && learn.lesson1Examples === 4 && learn.hidden,
         JSON.stringify(learn));
 

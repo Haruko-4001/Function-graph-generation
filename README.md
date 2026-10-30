@@ -144,7 +144,7 @@ npx serve .
 
 | 命令 | 作用 |
 |---|---|
-| `npm test` | 161 个单元测试（含真跑导出的 Python） |
+| `npm test` | 162 个单元测试（含真跑导出的 Python） |
 | `npm run build` / `build:offline` | 单文件版 / 离线版 |
 | `npm run smoke` | 浏览器端到端冒烟（自动找 Chrome/Edge） |
 | `npm run mcp` | 启动 MCP 服务器（stdio） |
@@ -162,7 +162,7 @@ npx serve .
 把 `index.html + css + js` 打包成一个自包含 HTML：
 
 ```bash
-npm run build            # 生成 dist/math-function-visualizer.html（约 527 KB，库走 CDN）
+npm run build            # 生成 dist/math-function-visualizer.html（约 541 KB，库走 CDN）
 npm run build:offline    # 生成离线版（约 4.3 MB，完全不联网也能用）
 ```
 
@@ -209,7 +209,7 @@ math_function2.0/
 │   ├── curriculum-data.js # 62 节点 / 90 题型标签 / 60 条结论
 │   ├── pattern-data.js # 71 个题型族 / 90 个子型
 │   ├── book-data.js   # 两本专著 15 章完整书目与题型映射
-│   ├── lesson-data.js # 第1–7章精讲（20 道高考真题）
+│   ├── lesson-data.js # 第1–10章精讲（26 道高考真题）
 │   ├── learning.js     # 知识地图、搜索与实验室联动
 │   ├── ui.js           # 应用控制器（状态/校验/报告/导出/分享）
 │   ├── motion.js       # 克制的入场/切换动效（尊重减少动态偏好）
@@ -270,7 +270,7 @@ math_function2.0/
 6. **自测是「方法识别」层**：题目由题型卡的识别信号/通法/易错点自动生成，不是完整的计算题库；
    涉及具体数值的大题仍需学生自行演算。
 7. **书目已融合进知识节点**：章节摘要与全部小节清单在节点卡内展开；但不复制原书正文、例题与答案。
-   目前第 1–7 章共有 20 道高考真题精讲，其余章节仍是索引级；真题题库待扩充。
+   目前《导数的秘密》十章共有 26 道高考真题精讲；接下来补《圆锥曲线的秘密》。
 8. **圆锥定点定值与极值点偏移暂无交互实验**：7 个基础教学实验（割线→切线、椭圆定义、离心率、面积累积等）已上线，但这两个专题仍以结论卡与数值工具为主。
 9. **大学方法单独标记**：洛必达、泰勒、中值定理只作为结论卡出现，不进入高中解题步骤推荐。
 10. **未做性能压测**：本项目没有 benchmark，只有界面右下角的 FPS / 上次绘图耗时。
@@ -281,7 +281,7 @@ math_function2.0/
 
 ```bash
 npm install   # 仅需 mathjs（测试用）
-npm test      # 161 个用例：核心 44 + 助手 28 + 分镜 19 + 导出 20 + 圆锥 14 + 导数 9 + 课程 9 + 题型 5 + 书目 5 + 样章 8
+npm test      # 162 个用例：核心 44 + 助手 28 + 分镜 19 + 导出 20 + 圆锥 14 + 导数 9 + 课程 9 + 题型 5 + 书目 5 + 样章 9
 npm run smoke # 浏览器端到端（自动找本机 Chrome/Edge，找不到则跳过）
 ```
 

@@ -14,7 +14,189 @@
     'use strict';
 
     const lessons = {
-        'D-5': {
+        'D-8': {
+            chapterId: 'D-8',
+            nodeId: 'E8',
+            title: '简单代数不等式',
+            badge: '高考真题精讲',
+            intro: '把代数不等式看成函数形状：切线给下界，割线给上界。',
+            note: '2 道高考真题，逐题标注来源；解答独立撰写。',
+            sections: [
+                {
+                    id: 'D-8-1',
+                    title: '8.1 切线放缩与割线放缩',
+                    lead: 'ln x≤x−1 是切线放缩；e^{x−1}≥x 也是切线放缩。',
+                    body: [
+                        '代数不等式最常见的两条切线：e^x≥x+1 与 ln x≤x−1。它们都是“函数在一点处的切线不低于/不超过曲线”。',
+                        '切线放缩的关键不是背公式，而是会换元：把 x 换成 x−1、1/x 或一个参数表达式。'
+                    ],
+                    method: [
+                        '先看目标是否需要 ln 或指数。',
+                        '选切线：e^x≥x+1、ln x≤x−1。',
+                        '换元后代入，检查等号点。',
+                        '需要双侧时，再配一条上界。'
+                    ],
+                    patterns: ['E-8', 'E-12'],
+                    examples: [
+                        {
+                            id: '真题 1',
+                            source: '2017 年普通高等学校招生全国统一考试（全国Ⅲ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=x−1−a ln x</code>。若 f(x)≥0，求 a；并求乘积 <code>(1+1/2)(1+1/2<sup>2</sup>)…(1+1/2<sup>n</sup>)&lt;m</code> 中整数 m 的最小值。',
+                            analysis: '先由 f≥0 得 ln x≤x−1，再对乘积取对数，把乘积的估计变成求和的估计。',
+                            steps: [
+                                'f(1)=0 且 f≥0，所以 x=1 是最小值点，f′(1)=1−a=0，得 a=1。',
+                                'a=1 时 f=x−1−ln x≥0，即 <code>ln x≤x−1</code>。',
+                                '取对数：<code>ln P<sub>n</sub>=Σ ln(1+2<sup>−k</sup>)≤Σ2<sup>−k</sup>&lt;1</code>，所以 P<sub>n</sub>&lt;e&lt;3。',
+                                'n=3 时 P<sub>3</sub>=2.109375&gt;2，所以最小整数 m=3。'
+                            ],
+                            answer: 'a=1，m=3。',
+                            link: '对应 8.1：ln x≤x−1 是切线放缩；乘积取对数后就能用它估计。',
+                            pitfall: '只证上界不够，还要用 n=3 的乘积说明 m=2 不行。'
+                        },
+                        {
+                            id: '真题 2',
+                            source: '2018 年普通高等学校招生全国统一考试（全国Ⅰ卷·文科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=a e<sup>x</sup>−ln x−1</code>。证明：当 a≥1/e 时，f(x)≥0。',
+                            analysis: '先把参数放缩成 g=e<sup>x−1</sup>−ln x−1，再证明 g≥0；这与 e^{x−1}≥x≥ln x+1 是同一条切线链。',
+                            steps: [
+                                'a≥1/e 时，<code>f(x)≥e<sup>x−1</sup>−ln x−1</code>。令 g=e<sup>x−1</sup>−ln x−1。',
+                                '<code>g′(x)=e<sup>x−1</sup>−1/x</code>，g′(1)=0；g″=e<sup>x−1</sup>+1/x<sup>2</sup>&gt;0，所以 g′ 递增。',
+                                'g′ 在 x&lt;1 为负、在 x&gt;1 为正，g 在 x=1 取最小值 g(1)=0。',
+                                '所以 g≥0，故 f≥0。'
+                            ],
+                            answer: '证明见解答。',
+                            link: '对应 8.1：指数放缩与对数放缩可以接成 e^{x−1}≥x≥ln x+1；把参数 a 放到最小处，就回到这条链。',
+                            pitfall: '放缩方向不要反：a 越大 f 越大，因此用 a=1/e 作下界。'
+                        }
+                    ]
+                }
+            ]
+        },
+        'D-9': {
+            chapterId: 'D-9',
+            nodeId: 'E10',
+            title: '函数与导数客观题选讲',
+            badge: '高考真题精讲',
+            intro: '客观题的核心是降维：两根关系、对称性、特殊点，能把计算量压到最小。',
+            note: '2 道高考真题，逐题标注来源；解答独立撰写。',
+            sections: [
+                {
+                    id: 'D-9-1',
+                    title: '9.1 两根关系与特殊点',
+                    lead: '小题先找关系：两根之积、端点值、极值点横坐标。',
+                    body: [
+                        '客观题不宜一上来就算到底。先看能不能用两根之积、端点值、极值点位置把变量减少。',
+                        '零点个数题则要“最小值 + 两端极限”配合，不要只凭图像猜。'
+                    ],
+                    method: [
+                        '先求导，找临界点和两根关系。',
+                        '用端点值/特殊值定符号。',
+                        '用单调性排除多余零点。',
+                        '最后写参数范围或结论。'
+                    ],
+                    patterns: ['E-2', 'E-7', 'E-10'],
+                    examples: [
+                        {
+                            id: '真题 3',
+                            source: '2018 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=1/x−x+a ln x</code>。若 f(x) 存在两个极值点 x<sub>1</sub>,x<sub>2</sub>，证明：<code>(f(x<sub>1</sub>)−f(x<sub>2</sub>))/(x<sub>1</sub>−x<sub>2</sub>)&lt;a−2</code>。',
+                            analysis: '两根之积为 1，直接把差商降维；再用 2ln t&lt;t−1/t。',
+                            steps: [
+                                '两极值点说明 a&gt;2，x<sub>1</sub>,x<sub>2</sub> 是 x²−a x+1=0 的两根，故 x<sub>1</sub>x<sub>2</sub>=1。',
+                                '差商化简为 <code>−2+a ln(x<sub>1</sub>/x<sub>2</sub>)/(x<sub>1</sub>−x<sub>2</sub>)</code>。',
+                                '要证 &lt;a−2，只需 <code>ln(x<sub>1</sub>/x<sub>2</sub>)&lt;x<sub>1</sub>−x<sub>2</sub></code>。',
+                                '令 t=x<sub>1</sub>&gt;1，则 <code>2ln t&lt;t−1/t</code>，结论成立。'
+                            ],
+                            answer: '证明见解答。',
+                            link: '对应 9.1：先用两根关系降维，再证不等式；这是客观题常用的“少算一步”。',
+                            pitfall: '两根之积不写，后面的化简会全部卡住。'
+                        },
+                        {
+                            id: '真题 4',
+                            source: '2017 年普通高等学校招生全国统一考试（全国Ⅰ卷·理科）数学 · 第 21 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=a e<sup>2x</sup>+(a−2)e<sup>x</sup>−x</code>。若 f(x) 有两个零点，求 a 的取值范围。',
+                            analysis: '由最小值小于 0 得 0&lt;a&lt;1，再用两端极限确认两个零点。',
+                            steps: [
+                                '<code>f′(x)=(a e<sup>x</sup>−1)(2e<sup>x</sup>+1)</code>。a≤0 时 f′&lt;0，至多一个零点。',
+                                'a&gt;0 时最小值在 x=−ln a，<code>f<sub>min</sub>=1−1/a+ln a</code>。',
+                                'g(a)=1−1/a+ln a，g′&gt;0，g(1)=0，所以 0&lt;a&lt;1 时最小值小于 0。',
+                                '两端极限均为 +∞，最小值小于 0，故两侧各有一个零点，共两个。'
+                            ],
+                            answer: '0&lt;a&lt;1。',
+                            link: '对应 9.1：先由最小值筛参数，再用两端极限确认零点；不要只凭单调性猜个数。',
+                            pitfall: 'a≤0 时 f 递减，但仍可能有一个零点，题目要求两个，必须排除。'
+                        }
+                    ]
+                }
+            ]
+        },
+        'D-10': {
+            chapterId: 'D-10',
+            nodeId: 'E10',
+            title: '著名不等式、待定系数与指对交点',
+            badge: '高考真题精讲',
+            intro: '把指数与对数看成互逆结构：g(e^t)=f(t)，能把两条曲线上的点一一对应。',
+            note: '2 道高考真题，逐题标注来源；解答独立撰写。',
+            sections: [
+                {
+                    id: 'D-10-1',
+                    title: '10.1 指对交点与公切线',
+                    lead: '指对互逆：g(e^t)=f(t)，用同一条等式把两个交点接起来。',
+                    body: [
+                        '指数函数与对数函数的交点，常用 g(e^t)=f(t) 或 f(ln x)=g(x) 连接。',
+                        '公切线则要同时满足斜率相等与截距相等；只证斜率相等会漏掉平行切线。'
+                    ],
+                    method: [
+                        '先找公共点，不要先设任意水平线。',
+                        '用 g(e^t)=f(t) 建立交点对应。',
+                        '由公共点导出横坐标关系。',
+                        '公切线用“斜率 + 截距”两条同时验证。'
+                    ],
+                    patterns: ['E-10'],
+                    examples: [
+                        {
+                            id: '真题 5',
+                            source: '2022 年普通高等学校招生全国统一考试（新高考Ⅰ卷）数学 · 第 22 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=e<sup>x</sup>−ax</code> 和 <code>g(x)=ax−ln x</code> 有相同的最小值。<br>（1）求 a；<br>（2）证明：存在直线 y=b，使两条曲线共有三个不同交点，且三个横坐标成等差数列。',
+                            analysis: '先求 a=1，再找公共点 x<sub>0</sub>；由 g(e<sup>t</sup>)=f(t) 得 x<sub>1</sub>=ln x<sub>0</sub>、x<sub>4</sub>=e<sup>x<sub>0</sub></sup>，故 x<sub>1</sub>+x<sub>4</sub>=2x<sub>0</sub>。',
+                            steps: [
+                                'a&gt;0。f 的最小值为 a−a ln a，g 的最小值为 1+ln a。',
+                                '由最小值相等得 <code>ln a=(a−1)/(a+1)</code>。令 φ(a)=ln a−(a−1)/(a+1)，φ′&gt;0，φ(1)=0，所以 a=1。',
+                                '取公共点 x<sub>0</sub>∈(0,1)，令 b=f(x<sub>0</sub>)=g(x<sub>0</sub>)&gt;1。f=b 有两根 x<sub>1</sub>&lt;0 与 x<sub>0</sub>；g=b 有两根 x<sub>0</sub> 与 x<sub>4</sub>&gt;1。',
+                                '由 <code>g(e<sup>x<sub>1</sub></sup>)=f(x<sub>1</sub>)=b</code> 得 e<sup>x<sub>1</sub></sup>=x<sub>0</sub>；由 <code>f(ln x<sub>0</sub>)=g(x<sub>0</sub>)=b</code> 得 x<sub>1</sub>=ln x<sub>0</sub>；又 g(e<sup>x<sub>0</sub></sup>)=f(x<sub>0</sub>)=b，得 x<sub>4</sub>=e<sup>x<sub>0</sub></sup>。',
+                                '由 f(x<sub>0</sub>)=g(x<sub>0</sub>) 得 <code>e<sup>x<sub>0</sub></sup>=2x<sub>0</sub>−ln x<sub>0</sub></code>，所以 x<sub>1</sub>+x<sub>4</sub>=ln x<sub>0</sub>+e<sup>x<sub>0</sub></sup>=2x<sub>0</sub>，三根成等差数列。'
+                            ],
+                            answer: 'a=1；x<sub>1</sub>=ln x<sub>0</sub>、x<sub>0</sub>、x<sub>4</sub>=e<sup>x<sub>0</sub></sup> 成等差数列。',
+                            link: '对应 10.1：用互逆结构把两条曲线上的点一一对应，再由公共点导出等差关系。',
+                            pitfall: '不要默认任意 b 都有三个交点；必须先找公共点。'
+                        },
+                        {
+                            id: '真题 6',
+                            source: '2019 年普通高等学校招生全国统一考试（全国Ⅱ卷·理科）数学 · 第 20 题',
+                            tag: '高考真题',
+                            problem: '已知函数 <code>f(x)=ln x−(x+1)/(x−1)</code>。<br>（1）讨论 f(x) 的单调性，并证明 f(x) 有且仅有两个零点；<br>（2）设 x<sub>0</sub> 是 f(x) 的一个零点，证明曲线 y=ln x 在 A(x<sub>0</sub>,ln x<sub>0</sub>) 处的切线也是 y=e<sup>x</sup> 的切线。',
+                            analysis: '先分段求零点，再把公切线拆成“斜率相等 + 截距相等”。',
+                            steps: [
+                                '<code>f′(x)=1/x+2/(x−1)<sup>2</sup>&gt;0</code>，f 在 (0,1) 与 (1,+∞) 上分别递增。',
+                                '在 (0,1) 上由 f→−∞ 与 f→+∞ 得一个零点；在 (1,+∞) 上由 f→−∞ 与 f→+∞ 得另一个零点。',
+                                '设 f(x<sub>0</sub>)=0，则 <code>ln x<sub>0</sub>=(x<sub>0</sub>+1)/(x<sub>0</sub>−1)</code>。A 处切线为 <code>y=x/x<sub>0</sub>+ln x<sub>0</sub>−1</code>。',
+                                '取 <code>B(−ln x<sub>0</sub>,1/x<sub>0</sub>)</code>，它在 y=e<sup>x</sup> 上；B 处切线为 <code>y=x/x<sub>0</sub>+(ln x<sub>0</sub>+1)/x<sub>0</sub></code>。',
+                                '两截距相等等价于 <code>(x<sub>0</sub>−1)ln x<sub>0</sub>=x<sub>0</sub>+1</code>，即 f(x<sub>0</sub>)=0，故两切线重合。'
+                            ],
+                            answer: '（1）两个零点；（2）公切线证明见解答。',
+                            link: '对应 10.1：公切线不是只看斜率，还要让截距相等；这里用 f(x<sub>0</sub>)=0 把两条切线接起来。',
+                            pitfall: '只证斜率相等会得到两条平行线，不一定是同一条切线。'
+                        }
+                    ]
+                }
+            ]
+        },
+                'D-5': {
             chapterId: 'D-5',
             nodeId: 'E9',
             title: '偏移问题对策多',
