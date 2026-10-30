@@ -28,6 +28,8 @@ const lesson10 = lessons['D-10'];
 const conic1 = lessons['C-1'];
 const conic2 = lessons['C-2'];
 const conic3 = lessons['C-3'];
+const conic4 = lessons['C-4'];
+const conic5 = lessons['C-5'];
 
 console.log('\n[精讲样章：结构与内容]');
 
@@ -35,6 +37,10 @@ test('圆锥曲线第1、2章已开始（C-1 两题、C-2 一题）', () => {
     assert(conic1 && conic1.sections.reduce((n, s) => n + s.examples.length, 0) === 2, 'C-1 题数');
     assert(conic2 && conic2.sections.reduce((n, s) => n + s.examples.length, 0) === 1, 'C-2 题数');
     assert(conic3 && conic3.sections.reduce((n, s) => n + s.examples.length, 0) === 1, 'C-3 题数');
+    assert(conic4 && conic4.sections.reduce((n, s) => n + s.examples.length, 0) === 1, 'C-4 题数');
+    assert(conic5 && conic5.sections.reduce((n, s) => n + s.examples.length, 0) === 1, 'C-5 题数');
+    assert(conic4 && conic4.sections.reduce((n, s) => n + s.examples.length, 0) === 1, 'C-4 题数');
+    assert(conic5 && conic5.sections.reduce((n, s) => n + s.examples.length, 0) === 1, 'C-5 题数');
 });
 
 test('第八、九、十章各 2 道高考真题', () => {
